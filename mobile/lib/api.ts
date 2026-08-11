@@ -72,6 +72,22 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  listCategories: () =>
+    apiFetch<{ categories: Category[] }>("/categories").then(
+      (r) => r.categories,
+    ),
+
+  createCategory: (input: {
+    name: string;
+    icon?: string;
+    color?: string;
+    budget?: number;
+  }) =>
+    apiFetch<{ category: Category }>("/categories", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }).then((r) => r.category),
+
   listExpenses: () =>
     apiFetch<{ expenses: Expense[] }>("/expenses").then((r) => r.expenses),
 
