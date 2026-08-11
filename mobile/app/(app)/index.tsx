@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { Link, Stack, useFocusEffect } from "expo-router";
+import { Link, Stack, useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, type Expense } from "@/lib/api";
 import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
@@ -33,6 +33,7 @@ function monthLabel(key: string) {
 
 export default function ExpensesScreen() {
   const { signOut } = useAuth();
+  const router = useRouter();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -256,7 +257,23 @@ export default function ExpensesScreen() {
           ) : null
         }
         renderItem={({ item }) => (
-          <Pressable style={styles.row} onLongPress={() => handleDelete(item)}>
+          <Pressable
+            style={styles.row}
+            onLongPress={() => handleDelete(item)}
+            onPress={() =>
+              router.push({
+                pathname: "/(app)/new",
+                params: {
+                  id: item._id,
+                  title: item.title,
+                  amount: String(item.amount),
+                  date: item.date,
+                  note: item.note ?? "",
+                  categoryId: item.category?._id ?? "",
+                },
+              })
+            }
+          >
             <View
               style={[
                 styles.badge,
