@@ -49,6 +49,8 @@ export default function ExpensesScreen() {
   const { session } = useAuth();
   const name = (session?.user?.email ?? "").split("@")[0] || "Bem-vindo";
   const initial = name.charAt(0).toUpperCase();
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? "Bom dia" : hour < 20 ? "Boa tarde" : "Boa noite";
   const [period, setPeriod] = useState<Period>("month");
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -295,7 +297,7 @@ export default function ExpensesScreen() {
             <Text style={styles.avatarText}>{initial}</Text>
           </View>
           <View>
-            <Text style={styles.greetHi}>Olá 👋</Text>
+            <Text style={styles.greetHi}>{greet} 👋</Text>
             <Text style={styles.greetName} numberOfLines={1}>
               {name}
             </Text>

@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient as ExpoGradient } from "expo-linear-gradient";
 import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { formatMoney } from "@/lib/format";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
@@ -158,7 +159,12 @@ export default function Investir() {
             <NumInput label="Prazo" value={years} onChangeText={setYears} unit="anos" />
           </View>
 
-          <View style={styles.result}>
+          <ExpoGradient
+            colors={["rgba(53,214,197,0.14)", "rgba(53,214,197,0.02)"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.result}
+          >
             <Text style={styles.resultLabel}>
               Valor estimado ao fim de {Math.max(1, Math.round(num(years, 1)))} anos
             </Text>
@@ -184,7 +190,7 @@ export default function Investir() {
                 </Text>
               </View>
             </View>
-          </View>
+          </ExpoGradient>
         </View>
 
         {/* FIRE */}
@@ -199,7 +205,12 @@ export default function Investir() {
           </View>
           <NumInput label="Retorno anual esperado" value={fRate} onChangeText={setFRate} unit="%" />
 
-          <View style={styles.result}>
+          <ExpoGradient
+            colors={["rgba(255,149,0,0.14)", "rgba(255,55,95,0.03)"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.result}
+          >
             <Text style={styles.resultLabel}>Precisas de ter investido</Text>
             <Text style={styles.resultBig}>{formatMoney(fire.target)}</Text>
             <Text style={styles.cardSub}>
@@ -225,7 +236,7 @@ export default function Investir() {
                 </Text>
               </View>
             </View>
-          </View>
+          </ExpoGradient>
         </View>
         <View style={{ height: 40 }} />
       </ScrollView>
