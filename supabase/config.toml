@@ -1,0 +1,9 @@
+# Configuração mínima do projeto Supabase local (supabase CLI).
+# Substitui project_id pelo ref do teu projeto (Dashboard > Project Settings).
+project_id = "teste-app"
+
+[functions.expenses]
+verify_jwt = true
+
+[functions.expense]
+verify_jwt = true

@@ -1,0 +1,45 @@
+# Dependências
+node_modules/
+.pnp
+.pnp.js
+
+# Variáveis de ambiente / secrets (NUNCA versionar)
+.env
+.env.*
+!.env.example
+
+# Expo
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+*.orig.*
+
+# Sanity
+sanity/dist/
+sanity/.sanity/
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+
+# Builds nativos
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+mobile/ios/
+mobile/android/
+
+# Logs / SO
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+Thumbs.db
+
+# Editores
+.idea/
+.vscode/
+*.swp

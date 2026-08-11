@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Controlo de Custos",
+    "slug": "teste-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "testeapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "pt.rochadesign.testeapp"
+    },
+    "android": {
+      "package": "pt.rochadesign.testeapp",
+      "adaptiveIcon": {
+        "backgroundColor": "#111827"
+      }
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
