@@ -1,0 +1,487 @@
+<title>Controlo de Custos — Demo</title>
+<meta name="description" content="Demo interativa da app de controlo de custos — sem login, dados de exemplo." />
+
+<style>
+  :root {
+    /* Identidade da app (tema escuro assumido, estilo widget iOS). */
+    --bg: #0A0A0B;
+    --backdrop: #050506;
+    --surface: #161618;
+    --surface-2: #202023;
+    --surface-3: #2A2A2E;
+    --border: #2A2A2E;
+    --text: #F5F5F7;
+    --muted: #8E8E93;
+    --muted-2: #6A6A70;
+    --primary: #6366F1;
+    --primary-weak: #4F46E5;
+    --danger: #FF453A;
+    --track: #2A2A2E;
+
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --r-sm: 10px;
+    --r-md: 16px;
+    --r-lg: 22px;
+    --r-xl: 26px;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--backdrop);
+    color: var(--text);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    justify-content: center;
+    min-height: 100dvh;
+  }
+
+  /* Coluna "telemóvel" */
+  .phone {
+    width: 100%;
+    max-width: 440px;
+    background: var(--bg);
+    min-height: 100dvh;
+    position: relative;
+    overflow-x: hidden;
+    box-shadow: 0 0 80px rgba(0,0,0,0.6);
+  }
+  @media (min-width: 480px) {
+    .phone { margin: 24px 0; min-height: auto; border-radius: 40px; border: 1px solid #1c1c1f; }
+  }
+
+  .scroll { padding: 0 0 140px; }
+
+  /* App bar */
+  .appbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 20px 6px;
+  }
+  .appbar h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .demo-pill {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    color: var(--primary); background: rgba(99,102,241,0.14);
+    border: 1px solid rgba(99,102,241,0.3);
+    padding: 4px 9px; border-radius: 999px; text-transform: uppercase;
+  }
+
+  /* Cartão resumo */
+  .summary {
+    margin: 12px 16px 0; padding: 22px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+  }
+  .summary .month {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .summary .total {
+    font-size: 40px; font-weight: 800; letter-spacing: -0.03em; margin: 6px 0 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary .count { font-size: 14px; color: var(--muted); }
+  .budget-row {
+    margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .budget-labels { display: flex; justify-content: space-between; font-size: 13px; }
+  .budget-labels .l { color: var(--muted); }
+  .budget-labels .r { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .budget-track { height: 8px; background: var(--track); border-radius: 999px; overflow: hidden; }
+  .budget-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary), #818CF8); transition: width .6s cubic-bezier(.2,.7,.2,1); }
+
+  /* Secção */
+  .sec-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 28px 20px 12px;
+  }
+  .sec-head h2 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .sec-head .link { font-size: 14px; color: var(--muted); font-weight: 600; }
+
+  /* Cartões de categoria (scroll horizontal) */
+  .cats {
+    display: flex; gap: 12px; overflow-x: auto; padding: 0 16px 4px;
+    scroll-snap-type: x mandatory; scrollbar-width: none;
+  }
+  .cats::-webkit-scrollbar { display: none; }
+  .catcard {
+    flex: 0 0 auto; width: 150px; scroll-snap-align: start;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-lg); padding: 16px;
+  }
+  .ring-wrap { position: relative; width: 58px; height: 58px; }
+  .ring-wrap .icon {
+    position: absolute; inset: 9px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .catcard .name { margin-top: 12px; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .catcard .spent { font-size: 20px; font-weight: 800; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .catcard .rest { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .catcard .rest.over { color: var(--danger); }
+
+  /* Movimentos */
+  .movements { display: flex; flex-direction: column; gap: 8px; padding: 0 16px; }
+  .row {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-md); padding: 14px; width: 100%;
+    text-align: left; color: inherit; font-family: inherit; cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  .row:active { transform: scale(0.99); background: var(--surface-2); }
+  .row .badge {
+    width: 44px; height: 44px; border-radius: 12px; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .row .info { flex: 1; min-width: 0; }
+  .row .t { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .m { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .row .a { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+
+  /* FAB */
+  .fab {
+    position: fixed; right: max(20px, calc(50vw - 220px + 20px)); bottom: 28px;
+    width: 60px; height: 60px; border-radius: 999px; border: none;
+    background: var(--primary); color: #fff; font-size: 30px; cursor: pointer;
+    box-shadow: 0 10px 30px rgba(99,102,241,0.4);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .12s;
+  }
+  .fab:active { transform: scale(0.92); }
+
+  /* Bottom sheet */
+  .scrim {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 10;
+  }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 50%; bottom: 0; transform: translate(-50%, 100%);
+    width: 100%; max-width: 440px;
+    background: var(--surface); border-top-left-radius: 28px; border-top-right-radius: 28px;
+    border: 1px solid var(--border); border-bottom: none;
+    padding: 10px 20px calc(24px + env(safe-area-inset-bottom)); z-index: 20;
+    transition: transform .3s cubic-bezier(.2,.8,.2,1);
+  }
+  .sheet.open { transform: translate(-50%, 0); }
+  .grabber { width: 40px; height: 5px; border-radius: 999px; background: var(--surface-3); margin: 8px auto 16px; }
+  .sheet h3 { margin: 0 0 18px; font-size: 20px; font-weight: 700; }
+
+  label.field { display: block; margin-bottom: 14px; }
+  label.field .lab { font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 6px; display: block; }
+  .input {
+    width: 100%; height: 52px; border-radius: var(--r-md);
+    background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--text); font-size: 16px; font-family: inherit; padding: 0 14px;
+  }
+  .input:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+    padding: 9px 13px; border-radius: 999px; cursor: pointer;
+    background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--text); font-size: 14px; font-family: inherit;
+  }
+  .chip[aria-pressed="true"] { border-color: transparent; }
+
+  .btn {
+    width: 100%; height: 54px; border-radius: var(--r-md); border: none;
+    font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer;
+    margin-top: 4px; transition: transform .1s, opacity .15s;
+  }
+  .btn:active { transform: scale(0.99); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); margin-top: 10px; }
+  .btn-danger { background: rgba(255,69,58,0.12); color: var(--danger); border: 1px solid rgba(255,69,58,0.28); }
+
+  .detail-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .detail-head .badge { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+  .detail-head .amt { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .detail-head .sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+  .foot-note { text-align: center; color: var(--muted-2); font-size: 12px; padding: 24px 20px 0; line-height: 1.5; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="phone">
+  <div class="scroll">
+    <div class="appbar">
+      <h1>Custos</h1>
+      <span class="demo-pill">Demo</span>
+    </div>
+
+    <div class="summary">
+      <div class="month" id="month">—</div>
+      <div class="total" id="total">—</div>
+      <div class="count" id="count">—</div>
+      <div class="budget-row">
+        <div class="budget-labels">
+          <span class="l">Orçamento do mês</span>
+          <span class="r" id="budget-txt">—</span>
+        </div>
+        <div class="budget-track"><div class="budget-fill" id="budget-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="sec-head">
+      <h2>Gastos por categoria</h2>
+      <span class="link">Ver tudo ›</span>
+    </div>
+    <div class="cats" id="cats"></div>
+
+    <div class="sec-head">
+      <h2>Movimentos</h2>
+    </div>
+    <div class="movements" id="movements"></div>
+
+    <p class="foot-note">
+      Isto é uma demonstração. Os dados são de exemplo e vivem só no teu
+      telemóvel — nada é guardado. Recarrega para repor.
+    </p>
+  </div>
+
+  <button class="fab" id="fab" aria-label="Adicionar despesa">+</button>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- Sheet: adicionar -->
+<div class="sheet" id="add-sheet" role="dialog" aria-modal="true" aria-label="Nova despesa">
+  <div class="grabber"></div>
+  <h3>Nova despesa</h3>
+  <label class="field">
+    <span class="lab">Descrição</span>
+    <input class="input" id="f-title" placeholder="Ex.: Almoço, Combustível…" />
+  </label>
+  <label class="field">
+    <span class="lab">Valor (€)</span>
+    <input class="input" id="f-amount" inputmode="decimal" placeholder="0,00" />
+  </label>
+  <label class="field">
+    <span class="lab">Categoria</span>
+  </label>
+  <div class="chips" id="f-chips" style="margin:-8px 0 18px"></div>
+  <button class="btn btn-primary" id="f-save">Guardar despesa</button>
+  <button class="btn btn-ghost" id="f-cancel">Cancelar</button>
+</div>
+
+<!-- Sheet: detalhe / apagar -->
+<div class="sheet" id="detail-sheet" role="dialog" aria-modal="true" aria-label="Detalhe da despesa">
+  <div class="grabber"></div>
+  <div class="detail-head">
+    <div class="badge" id="d-badge"></div>
+    <div>
+      <div class="amt" id="d-amt"></div>
+      <div class="sub" id="d-sub"></div>
+    </div>
+  </div>
+  <button class="btn btn-danger" id="d-delete">Apagar despesa</button>
+  <button class="btn btn-ghost" id="d-close">Fechar</button>
+</div>
+
+<script>
+  // ---- Cor auxiliar: versão translúcida para fundos de ícone ----
+  function tint(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  const eur = (n) => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(n);
+
+  const CATEGORIES = [
+    { id: "food", name: "Restaurantes", icon: "🍔", color: "#FF9500", budget: 220 },
+    { id: "transport", name: "Transportes", icon: "🚗", color: "#0A84FF", budget: 150 },
+    { id: "home", name: "Habitação", icon: "🏠", color: "#8B5CF6", budget: 800 },
+    { id: "shopping", name: "Compras", icon: "🛒", color: "#34C759", budget: 120 },
+    { id: "leisure", name: "Lazer", icon: "🎬", color: "#FF375F", budget: 100 },
+  ];
+  const catById = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]));
+
+  const today = new Date();
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const daysAgo = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return iso(d); };
+
+  let expenses = [
+    { id: 1, title: "Renda da casa", amount: 750, cat: "home", date: daysAgo(3) },
+    { id: 2, title: "Combustível", amount: 62.30, cat: "transport", date: daysAgo(1) },
+    { id: 3, title: "Supermercado", amount: 48.72, cat: "shopping", date: daysAgo(4) },
+    { id: 4, title: "Jantar fora", amount: 38.5, cat: "food", date: daysAgo(2) },
+    { id: 5, title: "Cinema", amount: 24, cat: "leisure", date: daysAgo(5) },
+    { id: 6, title: "Almoço no trabalho", amount: 9.5, cat: "food", date: daysAgo(0) },
+    { id: 7, title: "Café", amount: 1.2, cat: "food", date: daysAgo(0) },
+  ];
+  let nextId = 8;
+
+  const monthName = () => {
+    const s = new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric" }).format(today);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
+
+  const relDate = (isoStr) => {
+    const d0 = iso(today), d1 = daysAgo(1);
+    if (isoStr === d0) return "Hoje";
+    if (isoStr === d1) return "Ontem";
+    const [y, m, day] = isoStr.split("-");
+    return `${day}/${m}`;
+  };
+
+  function ringSVG(progress, color) {
+    const S = 58, stroke = 4, r = (S - stroke) / 2, c = 2 * Math.PI * r;
+    const p = Math.max(0, Math.min(progress, 1));
+    const off = c * (1 - p);
+    return `
+      <svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" style="transform:rotate(-90deg)">
+        <circle cx="${S/2}" cy="${S/2}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${stroke}"/>
+        <circle cx="${S/2}" cy="${S/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+          stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c}"
+          data-target="${off}" class="ring-prog"/>
+      </svg>`;
+  }
+
+  function spentByCat(catId) {
+    return expenses.filter((e) => e.cat === catId).reduce((s, e) => s + e.amount, 0);
+  }
+
+  function render() {
+    const total = expenses.reduce((s, e) => s + e.amount, 0);
+    const totalBudget = CATEGORIES.reduce((s, c) => s + c.budget, 0);
+
+    document.getElementById("month").textContent = monthName();
+    document.getElementById("total").textContent = eur(total);
+    document.getElementById("count").textContent =
+      `${expenses.length} ${expenses.length === 1 ? "despesa" : "despesas"} este mês`;
+    document.getElementById("budget-txt").textContent = `${eur(total)} / ${eur(totalBudget)}`;
+    document.getElementById("budget-fill").style.width =
+      Math.min(100, (total / totalBudget) * 100) + "%";
+
+    // Categorias (ordenadas por gasto desc, só as com gasto)
+    const cats = CATEGORIES
+      .map((c) => ({ ...c, spent: spentByCat(c.id) }))
+      .filter((c) => c.spent > 0)
+      .sort((a, b) => b.spent - a.spent);
+
+    document.getElementById("cats").innerHTML = cats.map((c) => {
+      const rest = c.budget - c.spent;
+      const over = rest < 0;
+      return `
+        <div class="catcard">
+          <div class="ring-wrap">
+            ${ringSVG(c.spent / c.budget, c.color)}
+            <div class="icon" style="background:${tint(c.color, 0.9)}">${c.icon}</div>
+          </div>
+          <div class="name">${c.name}</div>
+          <div class="spent">${eur(c.spent)}</div>
+          <div class="rest ${over ? "over" : ""}">${over ? eur(Math.abs(rest)) + " acima" : eur(rest) + " restantes"}</div>
+        </div>`;
+    }).join("");
+
+    // Movimentos (mais recentes primeiro)
+    const rows = [...expenses].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id));
+    const box = document.getElementById("movements");
+    if (rows.length === 0) {
+      box.innerHTML = `<div class="empty">Sem despesas. Toca no + para adicionar.</div>`;
+    } else {
+      box.innerHTML = rows.map((e) => {
+        const c = catById[e.cat];
+        return `
+          <button class="row" data-id="${e.id}">
+            <div class="badge" style="background:${tint(c.color, 0.16)}">${c.icon}</div>
+            <div class="info">
+              <div class="t">${escapeHtml(e.title)}</div>
+              <div class="m">${c.name} · ${relDate(e.date)}</div>
+            </div>
+            <div class="a">${eur(e.amount)}</div>
+          </button>`;
+      }).join("");
+      box.querySelectorAll(".row").forEach((el) =>
+        el.addEventListener("click", () => openDetail(+el.dataset.id)));
+    }
+
+    // Anima os anéis para o alvo
+    requestAnimationFrame(() => {
+      document.querySelectorAll(".ring-prog").forEach((r) => {
+        r.style.transition = "stroke-dashoffset .7s cubic-bezier(.2,.7,.2,1)";
+        r.style.strokeDashoffset = r.dataset.target;
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+  }
+
+  // ---- Sheets ----
+  const scrim = document.getElementById("scrim");
+  const addSheet = document.getElementById("add-sheet");
+  const detailSheet = document.getElementById("detail-sheet");
+
+  function openSheet(sheet) { scrim.classList.add("open"); sheet.classList.add("open"); }
+  function closeSheets() {
+    scrim.classList.remove("open");
+    addSheet.classList.remove("open");
+    detailSheet.classList.remove("open");
+  }
+  scrim.addEventListener("click", closeSheets);
+
+  // ---- Adicionar ----
+  let selectedCat = "food";
+  function buildChips() {
+    document.getElementById("f-chips").innerHTML = CATEGORIES.map((c) => `
+      <button class="chip" data-id="${c.id}" aria-pressed="${c.id === selectedCat}"
+        style="${c.id === selectedCat ? `background:${tint(c.color,0.18)};box-shadow:inset 0 0 0 1.5px ${c.color}` : ""}">
+        <span>${c.icon}</span> ${c.name}
+      </button>`).join("");
+    document.querySelectorAll("#f-chips .chip").forEach((el) =>
+      el.addEventListener("click", () => { selectedCat = el.dataset.id; buildChips(); }));
+  }
+
+  document.getElementById("fab").addEventListener("click", () => {
+    document.getElementById("f-title").value = "";
+    document.getElementById("f-amount").value = "";
+    selectedCat = "food";
+    buildChips();
+    openSheet(addSheet);
+    setTimeout(() => document.getElementById("f-title").focus(), 320);
+  });
+  document.getElementById("f-cancel").addEventListener("click", closeSheets);
+
+  document.getElementById("f-save").addEventListener("click", () => {
+    const title = document.getElementById("f-title").value.trim();
+    const amount = parseFloat(document.getElementById("f-amount").value.replace(",", "."));
+    if (!title) { document.getElementById("f-title").focus(); return; }
+    if (isNaN(amount) || amount <= 0) { document.getElementById("f-amount").focus(); return; }
+    expenses.push({ id: nextId++, title, amount, cat: selectedCat, date: iso(today) });
+    closeSheets();
+    render();
+  });
+
+  // ---- Detalhe / apagar ----
+  let detailId = null;
+  function openDetail(id) {
+    const e = expenses.find((x) => x.id === id);
+    if (!e) return;
+    detailId = id;
+    const c = catById[e.cat];
+    document.getElementById("d-badge").style.background = tint(c.color, 0.16);
+    document.getElementById("d-badge").textContent = c.icon;
+    document.getElementById("d-amt").textContent = eur(e.amount);
+    document.getElementById("d-sub").textContent = `${escapeHtml(e.title)} · ${c.name} · ${relDate(e.date)}`;
+    openSheet(detailSheet);
+  }
+  document.getElementById("d-close").addEventListener("click", closeSheets);
+  document.getElementById("d-delete").addEventListener("click", () => {
+    expenses = expenses.filter((x) => x.id !== detailId);
+    closeSheets();
+    render();
+  });
+
+  render();
+</script>
