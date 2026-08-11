@@ -188,7 +188,7 @@ export default function ExpensesScreen() {
 
       <FlatList
         ref={listRef}
-        data={expenses}
+        data={expenses.slice(0, 5)}
         keyExtractor={(i) => i._id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
@@ -379,7 +379,14 @@ export default function ExpensesScreen() {
               )}
             </View>
 
-            <Text style={styles.listTitle}>Movimentos</Text>
+            <View style={[styles.secHead, { marginTop: spacing.xl }]}>
+              <Text style={styles.secTitle}>Movimentos</Text>
+              <Pressable
+                onPress={() => router.push("/(app)/(tabs)/transacoes")}
+              >
+                <Text style={styles.secLink}>Ver todas ›</Text>
+              </Pressable>
+            </View>
           </View>
         }
         ListEmptyComponent={

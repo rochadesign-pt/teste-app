@@ -44,6 +44,18 @@ export default function ExpenseForm() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const remove = async () => {
+    setSaving(true);
+    try {
+      await api.deleteExpense(params.id!);
+      router.back();
+    } catch (err) {
+      setError((err as Error).message);
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     // Resiliente: se a função de categorias ainda não estiver no ar,
@@ -162,6 +174,20 @@ export default function ExpenseForm() {
           loading={saving}
         />
         <Button label="Cancelar" variant="ghost" onPress={() => router.back()} />
+        {isEdit &&
+          (confirmDelete ? (
+            <Button
+              label="Confirmar eliminação"
+              variant="danger"
+              onPress={remove}
+            />
+          ) : (
+            <Button
+              label="Apagar despesa"
+              variant="ghost"
+              onPress={() => setConfirmDelete(true)}
+            />
+          ))}
       </ScrollView>
     </KeyboardAvoidingView>
   );
