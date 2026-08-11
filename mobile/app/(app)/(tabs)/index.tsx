@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Pressable,
@@ -15,6 +16,7 @@ import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
 import { GoalCard } from "@/components/GoalCard";
 import { Ring, Sparkline } from "@/components/charts";
 import { formatMoney } from "@/lib/format";
+import { usePullToRefresh } from "@/lib/usePullToRefresh";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
 function tint(hex: string, a: number) {
@@ -38,6 +40,8 @@ export default function ExpensesScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [pullDist, setPullDist] = useState(0);
+  const listRef = useRef<FlatList<Expense>>(null);
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +63,16 @@ export default function ExpensesScreen() {
     useCallback(() => {
       load();
     }, [load]),
+  );
+
+  const onPullRefresh = useCallback(() => {
+    setRefreshing(true);
+    load();
+  }, [load]);
+  usePullToRefresh(
+    () => (listRef.current as any)?.getScrollableNode?.(),
+    onPullRefresh,
+    setPullDist,
   );
 
   const now = new Date();
@@ -150,7 +164,14 @@ export default function ExpensesScreen() {
         <Text style={styles.brand}>Custos</Text>
       </View>
 
+      {(pullDist > 0 || refreshing) && (
+        <View style={styles.pullIndicator} pointerEvents="none">
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      )}
+
       <FlatList
+        ref={listRef}
         data={expenses}
         keyExtractor={(i) => i._id}
         contentContainerStyle={styles.list}
@@ -365,6 +386,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     letterSpacing: -0.5,
   },
+  pullIndicator: { alignItems: "center", paddingVertical: spacing.sm },
   headerAction: {
     color: colors.textMuted,
     fontWeight: "600",
