@@ -10,8 +10,9 @@ import {
 } from "react-native";
 import { Link, Stack, useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { api, type Expense } from "@/lib/api";
+import { api, type Expense, type Goal } from "@/lib/api";
 import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
+import { GoalCard } from "@/components/GoalCard";
 import { Ring, Sparkline } from "@/components/charts";
 import { formatMoney } from "@/lib/format";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
@@ -35,12 +36,18 @@ export default function ExpensesScreen() {
   const { signOut } = useAuth();
   const router = useRouter();
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      setExpenses(await api.listExpenses());
+      const [exp, gls] = await Promise.all([
+        api.listExpenses(),
+        api.listGoals().catch(() => [] as Goal[]),
+      ]);
+      setExpenses(exp);
+      setGoals(gls);
     } catch (err) {
       Alert.alert("Erro ao carregar", (err as Error).message);
     } finally {
@@ -243,6 +250,53 @@ export default function ExpensesScreen() {
               </View>
             )}
 
+            {/* Objetivos */}
+            <View style={styles.section}>
+              <View style={styles.secHead}>
+                <Text style={styles.secTitle}>Objetivos</Text>
+                <Pressable onPress={() => router.push("/(app)/goal-form")}>
+                  <Text style={styles.secLink}>+ Novo</Text>
+                </Pressable>
+              </View>
+              {goals.length > 0 ? (
+                <FlatList
+                  horizontal
+                  data={goals}
+                  keyExtractor={(g) => g._id}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.cardsRow}
+                  renderItem={({ item }) => (
+                    <GoalCard
+                      goal={item}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(app)/goal",
+                          params: {
+                            id: item._id,
+                            name: item.name,
+                            icon: item.icon ?? "",
+                            color: item.color ?? "",
+                            target: String(item.target),
+                            saved: String(item.saved),
+                            monthly: String(item.monthly ?? 0),
+                          },
+                        })
+                      }
+                    />
+                  )}
+                />
+              ) : (
+                <Pressable
+                  style={styles.emptyGoal}
+                  onPress={() => router.push("/(app)/goal-form")}
+                >
+                  <Text style={styles.emptyGoalText}>
+                    + Criar o teu primeiro objetivo
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+
             <Text style={styles.listTitle}>Movimentos</Text>
           </View>
         }
@@ -355,6 +409,35 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   cardsRow: { paddingHorizontal: spacing.lg, gap: spacing.md },
+  secHead: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  secTitle: {
+    color: colors.text,
+    fontSize: 19,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+  },
+  secLink: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: "500",
+    fontFamily: fonts.sans,
+  },
+  emptyGoal: {
+    marginHorizontal: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: "dashed",
+    alignItems: "center",
+  },
+  emptyGoalText: { color: colors.textMuted, fontFamily: fonts.sans },
 
   listTitle: {
     color: colors.text,

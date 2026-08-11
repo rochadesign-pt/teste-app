@@ -16,6 +16,14 @@ export default function AppLayout() {
         name="new"
         options={{ title: "Nova despesa", presentation: "modal" }}
       />
+      <Stack.Screen
+        name="goal"
+        options={{ title: "Objetivo", presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="goal-form"
+        options={{ title: "Objetivo", presentation: "modal" }}
+      />
     </Stack>
   );
 }
