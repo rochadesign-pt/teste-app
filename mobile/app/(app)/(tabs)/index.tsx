@@ -155,7 +155,6 @@ export default function ExpensesScreen() {
   const budgetUsed = totalBudget > 0 ? Math.min(1, monthTotal / totalBudget) : 0;
   const budgetLeft = totalBudget - monthTotal;
 
-  const delta = monthTotal - prevTotal;
   const subsMonthly = useMemo(
     () => subs.reduce((s, x) => s + (x.amount || 0), 0),
     [subs],
@@ -231,6 +230,26 @@ export default function ExpensesScreen() {
       avgUnit: period === "year" ? "mês" : "dia",
     };
   }, [period, expenses, now, monthKey]);
+
+  // Análise do mês — insights sobre os dados (regras, não IA).
+  const insights = useMemo(() => {
+    const daysElapsed = now.getDate();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const projection = daysElapsed > 0 ? (monthTotal / daysElapsed) * daysInMonth : monthTotal;
+    const deltaPrev = monthTotal - prevTotal;
+    const biggestCat = cards[0];
+    const biggestSub = [...subs].sort((a, b) => b.amount - a.amount)[0];
+
+    let headline: string;
+    if (prevTotal > 0 && deltaPrev < -0.02 * prevTotal) {
+      headline = `Boa! Gastaste ${formatMoney(Math.abs(deltaPrev))} menos que no mês passado.`;
+    } else if (prevTotal > 0 && deltaPrev > 0.02 * prevTotal) {
+      headline = `Estás ${formatMoney(deltaPrev)} acima do mês passado — atenção ao ritmo.`;
+    } else {
+      headline = `Ao ritmo atual, o mês fecha em cerca de ${formatMoney(projection)}.`;
+    }
+    return { projection, biggestCat, biggestSub, headline };
+  }, [monthTotal, prevTotal, cards, subs, now]);
 
   const deleteSub = async (id: string) => {
     try {
@@ -428,6 +447,38 @@ export default function ExpensesScreen() {
                 </Text>
               </View>
             </View>
+
+            {/* Análise do mês */}
+            {monthExpenses.length > 0 && (
+              <LinearGradient
+                colors={["#6366F1", "#5B4FE0", "#7C3AED"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.analise}
+              >
+                <View style={styles.blob1} />
+                <View style={styles.blob2} />
+                <Text style={styles.analiseLabel}>✦ Análise do mês</Text>
+                <Text style={styles.analiseHeadline}>{insights.headline}</Text>
+                <View style={styles.analiseRows}>
+                  {insights.biggestCat && (
+                    <Text style={styles.analiseRow}>
+                      📊 Onde mais gastas: {insights.biggestCat.name} ·{" "}
+                      {formatMoney(insights.biggestCat.spent)}
+                    </Text>
+                  )}
+                  <Text style={styles.analiseRow}>
+                    🎯 Projeção fim do mês: ~{formatMoney(insights.projection)}
+                  </Text>
+                  {insights.biggestSub && (
+                    <Text style={styles.analiseRow}>
+                      💡 Cortar {insights.biggestSub.name} poupa{" "}
+                      {formatMoney(insights.biggestSub.amount * 12)}/ano
+                    </Text>
+                  )}
+                </View>
+              </LinearGradient>
+            )}
 
             {/* Categorias */}
             {cards.length > 0 && (
@@ -714,6 +765,55 @@ const styles = StyleSheet.create({
   },
   gridSub: { color: colors.textMuted, fontSize: 12.5, fontFamily: fonts.sans },
   gridRingRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  analise: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.xl,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    overflow: "hidden",
+    position: "relative",
+  },
+  blob1: {
+    position: "absolute",
+    width: 170,
+    height: 170,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    top: -70,
+    right: -40,
+  },
+  blob2: {
+    position: "absolute",
+    width: 90,
+    height: 90,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    bottom: -34,
+    left: 44,
+  },
+  analiseLabel: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 13,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+    letterSpacing: 0.3,
+  },
+  analiseHeadline: {
+    color: "#fff",
+    fontSize: 21,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+    letterSpacing: -0.4,
+    lineHeight: 27,
+    marginTop: spacing.sm,
+  },
+  analiseRows: { marginTop: spacing.md, gap: 6 },
+  analiseRow: {
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 14,
+    fontFamily: fonts.sans,
+    lineHeight: 20,
+  },
   headerAction: {
     color: colors.textMuted,
     fontWeight: "600",
