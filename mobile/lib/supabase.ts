@@ -1,5 +1,4 @@
 import "react-native-url-polyfill/auto";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { createClient } from "@supabase/supabase-js";
 import { Platform } from "react-native";
@@ -8,13 +7,26 @@ const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
 /**
- * Guardamos a sessão de forma segura no dispositivo.
- * - Em nativo (iOS/Android): expo-secure-store (Keychain / Keystore encriptado).
- * - Na web (durante o desenvolvimento): AsyncStorage, já que o SecureStore
- *   não existe no browser.
- *
- * O SecureStore tem um limite ~2KB por chave; para sessões maiores dividimos
- * o valor em pedaços.
+ * Armazenamento da sessão na web (browser / PWA).
+ * Guarda no localStorage, mas verifica sempre se existe `window` — durante o
+ * build estático a app é renderizada em Node (sem window), e sem esta guarda
+ * o supabase-js rebentaria.
+ */
+const WebStorage = {
+  getItem: (key: string) =>
+    typeof window !== "undefined" ? window.localStorage.getItem(key) : null,
+  setItem: (key: string, value: string) => {
+    if (typeof window !== "undefined") window.localStorage.setItem(key, value);
+  },
+  removeItem: (key: string) => {
+    if (typeof window !== "undefined") window.localStorage.removeItem(key);
+  },
+};
+
+/**
+ * Em nativo (iOS/Android) guardamos a sessão de forma segura no
+ * expo-secure-store (Keychain / Keystore encriptado). O SecureStore tem um
+ * limite ~2KB por chave; para sessões maiores dividimos o valor em pedaços.
  */
 const CHUNK_SIZE = 1800;
 
@@ -61,7 +73,7 @@ const SecureStorageAdapter = {
   },
 };
 
-const storage = Platform.OS === "web" ? AsyncStorage : SecureStorageAdapter;
+const storage = Platform.OS === "web" ? WebStorage : SecureStorageAdapter;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

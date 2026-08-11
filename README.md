@@ -101,6 +101,19 @@ npm start                 # abre o Expo; usa o Expo Go ou um simulador
 - `EXPO_PUBLIC_API_URL` é normalmente
   `https://<project-ref>.supabase.co/functions/v1`.
 
+## Pôr no telemóvel (sem App Store)
+
+A app corre também como **web app instalável (PWA)** — podes publicá-la e
+adicioná-la ao ecrã principal do iPhone, com ícone e ecrã inteiro. O passo a
+passo completo (Sanity → Supabase → Vercel → iPhone) está em
+**[DEPLOY.md](./DEPLOY.md)**.
+
+Build web local:
+```bash
+cd mobile
+npm run build:web     # gera a pasta dist/ pronta a publicar
+```
+
 ## O que já funciona
 
 - ✅ Registo e login por email/palavra-passe (Supabase)
