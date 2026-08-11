@@ -23,6 +23,12 @@ export const colors = {
   },
 };
 
+// Na web usamos a Geist (carregada em app/+html.tsx). Em nativo cai no
+// tipo de letra do sistema.
+export const fonts = {
+  sans: "Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+};
+
 export const spacing = {
   xs: 4,
   sm: 8,

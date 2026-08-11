@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Circle } from "react-native-svg";
-import { colors, radius, spacing } from "@/constants/theme";
+import { Ring } from "./charts";
+import { colors, fonts, radius, spacing } from "@/constants/theme";
 import { formatMoney } from "@/lib/format";
 
 export type CategoryCardData = {
@@ -12,56 +12,9 @@ export type CategoryCardData = {
   currency?: string;
 };
 
-const RING = 58; // diâmetro do anel
-const STROKE = 4;
-
-function ProgressRing({
-  progress,
-  color,
-  icon,
-}: {
-  progress: number;
-  color: string;
-  icon: string;
-}) {
-  const r = (RING - STROKE) / 2;
-  const c = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(progress, 1));
-  const offset = c * (1 - clamped);
-
-  return (
-    <View style={{ width: RING, height: RING }}>
-      <Svg width={RING} height={RING}>
-        {/* Track */}
-        <Circle
-          cx={RING / 2}
-          cy={RING / 2}
-          r={r}
-          stroke={colors.surfaceAlt}
-          strokeWidth={STROKE}
-          fill="none"
-        />
-        {/* Progresso */}
-        <Circle
-          cx={RING / 2}
-          cy={RING / 2}
-          r={r}
-          stroke={color}
-          strokeWidth={STROKE}
-          fill="none"
-          strokeDasharray={`${c} ${c}`}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          rotation={-90}
-          origin={`${RING / 2}, ${RING / 2}`}
-        />
-      </Svg>
-      {/* Ícone no centro, sobre círculo cheio da cor */}
-      <View style={[styles.iconCircle, { backgroundColor: color }]}>
-        <Text style={styles.iconGlyph}>{icon}</Text>
-      </View>
-    </View>
-  );
+function tint(hex: string, a: number) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
 export function CategoryCard({ data }: { data: CategoryCardData }) {
@@ -72,7 +25,17 @@ export function CategoryCard({ data }: { data: CategoryCardData }) {
 
   return (
     <View style={styles.card}>
-      <ProgressRing progress={progress} color={color} icon={icon} />
+      <View style={styles.ringWrap}>
+        <Ring size={58} stroke={4} progress={progress} color={color} />
+        <View
+          style={[
+            styles.iconCircle,
+            { backgroundColor: color, shadowColor: color },
+          ]}
+        >
+          <Text style={styles.iconGlyph}>{icon}</Text>
+        </View>
+      </View>
       <Text style={styles.name} numberOfLines={1}>
         {name}
       </Text>
@@ -90,9 +53,10 @@ export function CategoryCard({ data }: { data: CategoryCardData }) {
   );
 }
 
+const RING = 58;
 const styles = StyleSheet.create({
   card: {
-    width: 150,
+    width: 156,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -100,23 +64,34 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm,
   },
+  ringWrap: { width: RING, height: RING },
   iconCircle: {
     position: "absolute",
-    top: STROKE + 5,
-    left: STROKE + 5,
-    width: RING - (STROKE + 5) * 2,
-    height: RING - (STROKE + 5) * 2,
+    top: 10,
+    left: 10,
+    width: RING - 20,
+    height: RING - 20,
     borderRadius: RING,
     alignItems: "center",
     justifyContent: "center",
+    shadowOpacity: 0.55,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 0 },
   },
   iconGlyph: { fontSize: 18 },
   name: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "500",
+    fontFamily: fonts.sans,
     marginTop: spacing.xs,
   },
-  spent: { color: colors.text, fontSize: 20, fontWeight: "800" },
-  sub: { color: colors.textMuted, fontSize: 13 },
+  spent: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "500",
+    fontFamily: fonts.sans,
+    letterSpacing: -0.5,
+  },
+  sub: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
 });

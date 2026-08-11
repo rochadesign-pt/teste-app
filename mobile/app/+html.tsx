@@ -32,10 +32,18 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="icon" href="/favicon.png" />
 
-        {/* Fundo escuro enquanto o JS carrega, para não "piscar" branco. */}
+        {/* Fonte Geist (só web) + fundo escuro enquanto o JS carrega. */}
         <style
           dangerouslySetInnerHTML={{
-            __html: `html, body { background-color: #0A0A0B; }`,
+            __html: `
+              @font-face {
+                font-family: 'Geist';
+                src: url('/Geist-Variable.woff2') format('woff2');
+                font-weight: 100 900;
+                font-display: swap;
+              }
+              html, body { background-color: #0A0A0B; }
+            `,
           }}
         />
 
