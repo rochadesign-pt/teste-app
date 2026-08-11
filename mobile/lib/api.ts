@@ -1,6 +1,14 @@
 import { supabase } from "./supabase";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL!;
+// URL da camada API (edge functions). Se EXPO_PUBLIC_API_URL não estiver
+// definido, deriva-o do URL do Supabase — assim basta ter o SUPABASE_URL.
+const SUPABASE_URL = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? "").replace(
+  /\/+$/,
+  "",
+);
+const API_URL =
+  process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "") ||
+  `${SUPABASE_URL}/functions/v1`;
 
 export type Category = {
   _id: string;
