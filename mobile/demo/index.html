@@ -160,6 +160,29 @@
   .sim-legend { display: flex; gap: 16px; justify-content: center; margin-top: 6px; font-size: 12px; color: var(--muted); }
   .sim-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
 
+  /* ---- Recorrências ---- */
+  .recur { margin: 0 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px; }
+  .recur .rtop { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .recur .rtop .k { font-size: 13px; color: var(--muted); }
+  .recur .rtop .v { font-size: 26px; font-weight: 500; letter-spacing: -0.03em; margin-top: 2px; }
+  .recur .rtop .y { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .recur .rlist { margin-top: 14px; display: flex; flex-direction: column; }
+  .recur .rrow { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .recur .rrow + .rrow { border-top: 1px solid var(--border-2); }
+  .recur .rlogo { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-size: 16px; flex: 0 0 auto; }
+  .recur .rn { flex: 1; font-size: 15px; }
+  .recur .rc { font-size: 12px; color: var(--muted); }
+  .recur .ra { font-size: 15px; font-weight: 500; }
+  .recur .rx { color: var(--muted-2); cursor: pointer; padding: 6px; margin: -6px -4px -6px 2px; display: grid; place-items: center; border-radius: 8px; transition: color .15s, background .15s; }
+  .recur .rx:active { color: var(--danger); background: var(--surface-2); }
+
+  /* ---- FIRE card (herda .invest) ---- */
+  .fire { border-color: rgba(255,149,0,.22); background: linear-gradient(135deg, rgba(255,149,0,.10), rgba(255,55,95,.05)); }
+  .fire .icn { background: rgba(255,149,0,.16); }
+  .fire .iproj .to { color: var(--orange); }
+  .sim-progress { height: 8px; border-radius: 999px; background: var(--track); overflow: hidden; margin: 12px 0 4px; }
+  .sim-progress .pf { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--orange), var(--pink)); transition: width .7s var(--ease); }
+
   /* ---- Movements ---- */
   .movements { display: flex; flex-direction: column; gap: 8px; padding: 0 16px; }
   .row { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 13px 14px; width: 100%; text-align: left; color: inherit; font-family: inherit; cursor: pointer; transition: background .18s, transform .1s var(--ease); }
@@ -270,6 +293,12 @@
     </div>
     <div class="cats rise" id="cats" style="animation-delay:.16s"></div>
 
+    <div class="sec-head rise" style="animation-delay:.165s">
+      <h2>Recorrências</h2>
+      <span class="link" id="add-sub-link" style="cursor:pointer">+ Nova</span>
+    </div>
+    <div class="recur rise" id="recur" style="animation-delay:.168s"></div>
+
     <div class="sec-head rise" style="animation-delay:.17s">
       <h2>Objetivos</h2>
       <span class="link" id="add-goal-link" style="cursor:pointer">+ Novo</span>
@@ -291,6 +320,22 @@
         <span class="arrow">→</span>
         <span class="to tnum" id="inv-to">—</span>
         <span class="gain tnum" id="inv-gain">—</span>
+      </div>
+    </div>
+
+    <div class="sec-head rise" style="animation-delay:.205s"><h2>Liberdade financeira</h2></div>
+    <div class="invest fire rise" id="fire-card" style="animation-delay:.207s">
+      <div class="chev">›</div>
+      <div class="ih">
+        <div class="icn">🔥</div>
+        <div>
+          <div class="it">Número FIRE</div>
+          <div class="isub">Quanto precisas para viver dos juros</div>
+        </div>
+      </div>
+      <div class="iproj">
+        <span class="to tnum" id="fire-num">—</span>
+        <span class="gain tnum" id="fire-eta" style="color:var(--muted)">—</span>
       </div>
     </div>
 
@@ -449,6 +494,42 @@
   <button class="btn btn-ghost" id="si-close">Fechar</button>
 </div>
 
+<!-- Nova recorrência -->
+<div class="sheet" id="newsub-sheet" role="dialog" aria-modal="true" aria-label="Nova recorrência">
+  <div class="grabber"></div>
+  <h3>Nova recorrência</h3>
+  <label class="field"><span class="lab">Nome</span><input class="input" id="ns-name" placeholder="Ex.: Netflix, Ginásio…" /></label>
+  <label class="field"><span class="lab">Valor mensal (€)</span><div class="sim-input-wrap"><input class="input tnum" id="ns-amount" inputmode="decimal" placeholder="9,99" /><span class="unit">€</span></div></label>
+  <span class="lab" style="font-size:13px;color:var(--muted);font-weight:500;display:block;margin:6px 0 8px">Ícone</span>
+  <div class="chips" id="ns-icons" style="margin-bottom:18px"></div>
+  <button class="btn btn-primary" id="ns-save">Adicionar</button>
+  <button class="btn btn-ghost" id="ns-cancel">Cancelar</button>
+</div>
+
+<!-- FIRE -->
+<div class="sheet" id="fire-sheet" role="dialog" aria-modal="true" aria-label="Liberdade financeira">
+  <div class="grabber"></div>
+  <h3>Liberdade financeira</h3>
+  <div class="sim-grid">
+    <div class="sim-field"><span class="lab">Gasto mensal desejado</span><div class="sim-input-wrap"><input class="input tnum fire-in" id="fi-spend" inputmode="decimal" value="1500" /><span class="unit">€</span></div></div>
+    <div class="sim-field"><span class="lab">Taxa de levantamento</span><div class="sim-input-wrap"><input class="input tnum fire-in" id="fi-withdraw" inputmode="decimal" value="4" /><span class="unit">%</span></div></div>
+    <div class="sim-field"><span class="lab">Património atual</span><div class="sim-input-wrap"><input class="input tnum fire-in" id="fi-current" inputmode="decimal" value="15000" /><span class="unit">€</span></div></div>
+    <div class="sim-field"><span class="lab">Reforço mensal</span><div class="sim-input-wrap"><input class="input tnum fire-in" id="fi-monthly" inputmode="decimal" value="400" /><span class="unit">€</span></div></div>
+  </div>
+  <label class="field"><span class="lab">Retorno anual esperado</span><div class="sim-input-wrap"><input class="input tnum fire-in" id="fi-rate" inputmode="decimal" value="7" /><span class="unit">%</span></div></label>
+  <div class="sim-results">
+    <div class="rlab">Precisas de ter investido</div>
+    <div class="rbig tnum" id="fi-target">—</div>
+    <div class="rlab" id="fi-income" style="margin-top:2px">—</div>
+    <div class="sim-progress"><div class="pf" id="fi-progress" style="width:0%"></div></div>
+    <div class="sim-split">
+      <div class="s"><div class="k">Já tens</div><div class="v tnum" id="fi-have">—</div></div>
+      <div class="s"><div class="k">Independente em</div><div class="v gain" id="fi-years" style="color:var(--orange)">—</div></div>
+    </div>
+  </div>
+  <button class="btn btn-ghost" id="fi-close">Fechar</button>
+</div>
+
 <script>
   const eur = (n) => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(n);
   const eur0 = (n) => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
@@ -508,6 +589,17 @@
   const GOAL_COLORS = ["#0A84FF","#FF375F","#8B5CF6","#34C759","#FF9500","#35D6C5","#6366F1","#FFD60A","#40C8E0","#FF7A6B"];
 
   const sim = { initial:1000, monthly:150, rate:7, years:10 };
+
+  let SUBS = [
+    { id:1, name:"Netflix", icon:"📺", color:"#FF375F", amount:13.99 },
+    { id:2, name:"Spotify", icon:"🎵", color:"#34C759", amount:6.99 },
+    { id:3, name:"Ginásio", icon:"🏋️", color:"#FF9500", amount:39.90 },
+    { id:4, name:"iCloud", icon:"☁️", color:"#0A84FF", amount:2.99 },
+  ];
+  let nextSubId = 5;
+  const SUB_ICONS = ["📺","🎵","🏋️","☁️","📱","📰","🎮","🚗","🏠","💳"];
+
+  const fire = { spend:1500, withdraw:4, current:15000, monthly:400, rate:7 };
 
   const monthName = () => { const s=new Intl.DateTimeFormat("pt-PT",{month:"long"}).format(today); return s.charAt(0).toUpperCase()+s.slice(1); };
   const longDate = (isoStr) => { const [y,m,d]=isoStr.split("-").map(Number); return new Intl.DateTimeFormat("pt-PT",{day:"numeric",month:"long",year:"numeric"}).format(new Date(y,m-1,d)); };
@@ -649,7 +741,7 @@
       renderHero();
     }
     prevTotal=expenses.reduce((s,e)=>s+e.amount,0);
-    renderBudget(); renderCats(); renderGoals(); renderInvestPreview(); renderAccounts(); renderMovements();
+    renderBudget(); renderCats(); renderRecur(); renderGoals(); renderInvestPreview(); renderFirePreview(); renderAccounts(); renderMovements();
   }
 
   /* ---- sheets ---- */
@@ -818,6 +910,89 @@
   document.querySelectorAll(".sim-in").forEach(el=>el.addEventListener("input",()=>{ readSim(); renderSim(); renderInvestPreview(); }));
   $("invest-card").addEventListener("click",()=>{ readSim(); renderSim(); openSheet($("sim-sheet")); });
   $("si-close").addEventListener("click",closeSheets);
+
+  /* ---- Recorrências ---- */
+  function renderRecur(){
+    const monthly=SUBS.reduce((s,x)=>s+x.amount,0);
+    $("recur").innerHTML=`
+      <div class="rtop">
+        <div>
+          <div class="k">Total mensal</div>
+          <div class="v tnum">${eur(monthly)}</div>
+          <div class="y tnum">${eur(monthly*12)} por ano</div>
+        </div>
+      </div>
+      <div class="rlist">
+        ${SUBS.length? SUBS.map(s=>`
+          <div class="rrow">
+            <div class="rlogo" style="background:${tint(s.color,.16)}">${s.icon}</div>
+            <div class="rn">${esc(s.name)}<div class="rc">mensal</div></div>
+            <div class="ra tnum">${eur(s.amount)}</div>
+            <div class="rx" data-id="${s.id}" role="button" aria-label="Remover">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </div>
+          </div>`).join("") : `<div style="color:var(--muted);font-size:14px;padding:8px 0">Sem recorrências. Toca em “+ Nova”.</div>`}
+      </div>`;
+    $("recur").querySelectorAll(".rx").forEach(el=>el.addEventListener("click",()=>{ SUBS=SUBS.filter(s=>s.id!==+el.dataset.id); renderRecur(); }));
+  }
+  let nsIcon=SUB_ICONS[0], nsColor=GOAL_COLORS[0];
+  function buildSubIcons(){
+    $("ns-icons").innerHTML=SUB_ICONS.map((ic,i)=>`<button class="chip" data-ic="${ic}" data-col="${GOAL_COLORS[i]}" aria-pressed="${ic===nsIcon}" style="${ic===nsIcon?`box-shadow:inset 0 0 0 1.5px ${nsColor};background:${tint(nsColor,.16)}`:""}">${ic}</button>`).join("");
+    $("ns-icons").querySelectorAll(".chip").forEach(el=>el.addEventListener("click",()=>{ nsIcon=el.dataset.ic; nsColor=el.dataset.col; buildSubIcons(); }));
+  }
+  function openNewSub(){ nsIcon=SUB_ICONS[0]; nsColor=GOAL_COLORS[0]; $("ns-name").value=""; $("ns-amount").value=""; buildSubIcons(); openSheet($("newsub-sheet")); setTimeout(()=>$("ns-name").focus(),380); }
+  $("add-sub-link").addEventListener("click",openNewSub);
+  $("ns-cancel").addEventListener("click",closeSheets);
+  $("ns-save").addEventListener("click",()=>{
+    const name=$("ns-name").value.trim(), amount=parseFloat($("ns-amount").value.replace(",","."));
+    if(!name){$("ns-name").focus();return;} if(isNaN(amount)||amount<=0){$("ns-amount").focus();return;}
+    SUBS.push({ id:nextSubId++, name, icon:nsIcon, color:nsColor, amount });
+    closeSheets(); renderRecur();
+  });
+
+  /* ---- Liberdade financeira (FIRE) ---- */
+  function yearsToFire(target, current, monthly, annualRate){
+    if(current>=target) return 0;
+    const r=(annualRate/100)/12; let bal=current, m=0;
+    while(bal<target && m<80*12){ bal=bal*(1+r)+monthly; m++; }
+    return m>=80*12 ? null : m/12;
+  }
+  function fireCalc(){
+    const target=(fire.spend*12)/(Math.max(0.1,fire.withdraw)/100);
+    const years=yearsToFire(target, fire.current, fire.monthly, fire.rate);
+    return { target, years, income:target*(fire.withdraw/100) };
+  }
+  function fmtYears(y){
+    if(y===null) return "80+ anos";
+    if(y<=0) return "já és! 🎉";
+    if(y<1) return `~${Math.round(y*12)} meses`;
+    return `~${y.toFixed(y<10?1:0)} anos`;
+  }
+  function renderFirePreview(){
+    const {target,years}=fireCalc();
+    $("fire-num").textContent=eur0(target);
+    $("fire-eta").textContent=fmtYears(years);
+  }
+  function readFire(){
+    fire.spend=Math.max(0,parseFloat($("fi-spend").value.replace(",","."))||0);
+    fire.withdraw=Math.max(0.1,parseFloat($("fi-withdraw").value.replace(",","."))||4);
+    fire.current=Math.max(0,parseFloat($("fi-current").value.replace(",","."))||0);
+    fire.monthly=Math.max(0,parseFloat($("fi-monthly").value.replace(",","."))||0);
+    fire.rate=Math.max(0,parseFloat($("fi-rate").value.replace(",","."))||0);
+  }
+  function renderFire(){
+    const {target,years,income}=fireCalc();
+    $("fi-target").textContent=eur(target);
+    $("fi-income").textContent=`para gerar ${eur(income)} por ano (${eur(income/12)}/mês)`;
+    $("fi-have").textContent=eur(fire.current);
+    $("fi-years").textContent=fmtYears(years);
+    const pct=Math.min(1,fire.current/target);
+    const bar=$("fi-progress"); bar.style.width="0%";
+    requestAnimationFrame(()=>bar.style.width=(pct*100).toFixed(1)+"%");
+  }
+  document.querySelectorAll(".fire-in").forEach(el=>el.addEventListener("input",()=>{ readFire(); renderFire(); renderFirePreview(); }));
+  $("fire-card").addEventListener("click",()=>{ readFire(); renderFire(); openSheet($("fire-sheet")); });
+  $("fi-close").addEventListener("click",closeSheets);
 
   render(true);
 </script>
