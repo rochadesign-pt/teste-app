@@ -5,7 +5,7 @@ import { schemaTypes } from "./schemaTypes";
 
 // Estes valores vêm do teu projeto Sanity (sanity.io/manage).
 // Podes defini-los em .env com o prefixo SANITY_STUDIO_.
-const projectId = process.env.SANITY_STUDIO_PROJECT_ID || "your-project-id";
+const projectId = process.env.SANITY_STUDIO_PROJECT_ID || "3xa3stka";
 const dataset = process.env.SANITY_STUDIO_DATASET || "production";
 
 export default defineConfig({
