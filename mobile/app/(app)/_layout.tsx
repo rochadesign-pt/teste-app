@@ -11,7 +11,7 @@ export default function AppLayout() {
         contentStyle: { backgroundColor: colors.bg },
       }}
     >
-      <Stack.Screen name="index" options={{ title: "As minhas despesas" }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
         name="new"
         options={{ title: "Nova despesa", presentation: "modal" }}

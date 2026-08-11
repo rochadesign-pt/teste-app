@@ -90,7 +90,7 @@ export default function GoalForm() {
           color,
         });
       }
-      router.replace("/(app)");
+      router.replace("/(app)/(tabs)");
     } catch (err) {
       setError((err as Error).message);
     } finally {

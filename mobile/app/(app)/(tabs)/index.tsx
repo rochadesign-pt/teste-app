@@ -8,8 +8,8 @@ import {
   Text,
   View,
 } from "react-native";
-import { Link, Stack, useFocusEffect, useRouter } from "expo-router";
-import { useAuth } from "@/contexts/AuthContext";
+import { Link, useFocusEffect, useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { api, type Expense, type Goal } from "@/lib/api";
 import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
 import { GoalCard } from "@/components/GoalCard";
@@ -33,7 +33,6 @@ function monthLabel(key: string) {
 }
 
 export default function ExpensesScreen() {
-  const { signOut } = useAuth();
   const router = useRouter();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -146,16 +145,10 @@ export default function ExpensesScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <Pressable onPress={() => signOut()} hitSlop={12}>
-              <Text style={styles.headerAction}>Sair</Text>
-            </Pressable>
-          ),
-        }}
-      />
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.topbar}>
+        <Text style={styles.brand}>Custos</Text>
+      </View>
 
       <FlatList
         data={expenses}
@@ -354,12 +347,24 @@ export default function ExpensesScreen() {
           <Text style={styles.fabText}>+</Text>
         </Pressable>
       </Link>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  topbar: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  brand: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "700",
+    fontFamily: fonts.sans,
+    letterSpacing: -0.5,
+  },
   headerAction: {
     color: colors.textMuted,
     fontWeight: "600",

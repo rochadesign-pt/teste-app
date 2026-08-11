@@ -21,7 +21,7 @@ function RootNavigation() {
       router.replace("/(auth)/login");
     } else if (session && inAuthGroup) {
       // Com sessão -> entra na app.
-      router.replace("/(app)");
+      router.replace("/(app)/(tabs)");
     }
   }, [session, loading, segments]);
 
