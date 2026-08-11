@@ -4,6 +4,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -11,18 +12,9 @@ import {
 import { Link, Stack, useFocusEffect } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, type Expense } from "@/lib/api";
+import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
+import { formatMoney } from "@/lib/format";
 import { colors, radius, spacing } from "@/constants/theme";
-
-function formatMoney(amount: number, currency = "EUR") {
-  try {
-    return new Intl.NumberFormat("pt-PT", {
-      style: "currency",
-      currency,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${currency}`;
-  }
-}
 
 function currentMonthKey() {
   const now = new Date();
@@ -35,14 +27,6 @@ function monthLabel(key: string) {
   const name = new Intl.DateTimeFormat("pt-PT", { month: "long" }).format(d);
   return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${y}`;
 }
-
-type CategorySlice = {
-  key: string;
-  name: string;
-  icon: string;
-  color: string;
-  total: number;
-};
 
 export default function ExpensesScreen() {
   const { signOut } = useAuth();
@@ -70,7 +54,6 @@ export default function ExpensesScreen() {
 
   const monthKey = currentMonthKey();
 
-  // Despesas do mês atual (base do cartão de resumo).
   const monthExpenses = useMemo(
     () => expenses.filter((e) => (e.date ?? "").startsWith(monthKey)),
     [expenses, monthKey],
@@ -81,25 +64,32 @@ export default function ExpensesScreen() {
     [monthExpenses],
   );
 
-  // Repartição por categoria no mês (top 4).
-  const breakdown = useMemo<CategorySlice[]>(() => {
-    const map = new Map<string, CategorySlice>();
+  // Cartões de categoria (gasto vs orçamento) do mês atual.
+  const categoryCards = useMemo<CategoryCardData[]>(() => {
+    const map = new Map<
+      string,
+      CategoryCardData & { _sort: number }
+    >();
     for (const e of monthExpenses) {
       const key = e.category?._id ?? "sem";
       const existing = map.get(key);
       if (existing) {
-        existing.total += e.amount || 0;
+        existing.spent += e.amount || 0;
       } else {
         map.set(key, {
-          key,
           name: e.category?.name ?? "Sem categoria",
           icon: e.category?.icon ?? "💸",
           color: e.category?.color ?? colors.primary,
-          total: e.amount || 0,
+          budget: e.category?.budget,
+          spent: e.amount || 0,
+          currency: e.currency,
+          _sort: 0,
         });
       }
     }
-    return [...map.values()].sort((a, b) => b.total - a.total).slice(0, 4);
+    return [...map.values()]
+      .sort((a, b) => b.spent - a.spent)
+      .map(({ _sort, ...rest }) => rest);
   }, [monthExpenses]);
 
   const handleDelete = (item: Expense) => {
@@ -136,6 +126,7 @@ export default function ExpensesScreen() {
         data={expenses}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -147,45 +138,37 @@ export default function ExpensesScreen() {
           />
         }
         ListHeaderComponent={
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryMonth}>{monthLabel(monthKey)}</Text>
-            <Text style={styles.summaryValue}>{formatMoney(monthTotal)}</Text>
-            <Text style={styles.summaryCount}>
-              {monthExpenses.length}{" "}
-              {monthExpenses.length === 1 ? "despesa" : "despesas"} este mês
-            </Text>
+          <View>
+            {/* Cartão de resumo do mês */}
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryMonth}>{monthLabel(monthKey)}</Text>
+              <Text style={styles.summaryValue}>{formatMoney(monthTotal)}</Text>
+              <Text style={styles.summaryCount}>
+                {monthExpenses.length}{" "}
+                {monthExpenses.length === 1 ? "despesa" : "despesas"} este mês
+              </Text>
+            </View>
 
-            {breakdown.length > 0 && (
-              <View style={styles.breakdown}>
-                {breakdown.map((slice) => {
-                  const pct =
-                    monthTotal > 0 ? (slice.total / monthTotal) * 100 : 0;
-                  return (
-                    <View key={slice.key} style={styles.slice}>
-                      <View style={styles.sliceHeader}>
-                        <Text style={styles.sliceName} numberOfLines={1}>
-                          {slice.icon} {slice.name}
-                        </Text>
-                        <Text style={styles.sliceAmount}>
-                          {formatMoney(slice.total)}
-                        </Text>
-                      </View>
-                      <View style={styles.track}>
-                        <View
-                          style={[
-                            styles.fill,
-                            {
-                              width: `${Math.max(pct, 3)}%`,
-                              backgroundColor: slice.color,
-                            },
-                          ]}
-                        />
-                      </View>
-                    </View>
-                  );
-                })}
+            {/* Gastos por categoria (horizontal) */}
+            {categoryCards.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Gastos por categoria</Text>
+                  <Text style={styles.sectionLink}>Ver tudo ›</Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.cardsRow}
+                >
+                  {categoryCards.map((c, i) => (
+                    <CategoryCard key={c.name + i} data={c} />
+                  ))}
+                </ScrollView>
               </View>
             )}
+
+            <Text style={styles.listTitle}>Movimentos</Text>
           </View>
         }
         ListEmptyComponent={
@@ -238,16 +221,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     paddingRight: spacing.md,
   },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: 120, gap: spacing.sm },
+  list: { paddingBottom: 120, gap: spacing.sm },
 
   summaryCard: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
+    marginHorizontal: spacing.lg,
     marginTop: spacing.sm,
-    marginBottom: spacing.md,
   },
   summaryMonth: {
     color: colors.textMuted,
@@ -264,24 +247,26 @@ const styles = StyleSheet.create({
   },
   summaryCount: { color: colors.textMuted, fontSize: 14, marginTop: 2 },
 
-  breakdown: {
-    marginTop: spacing.lg,
-    gap: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.lg,
+  section: { marginTop: spacing.xl },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
-  slice: { gap: spacing.xs },
-  sliceHeader: { flexDirection: "row", justifyContent: "space-between" },
-  sliceName: { color: colors.text, fontSize: 14, flex: 1, marginRight: 8 },
-  sliceAmount: { color: colors.textMuted, fontSize: 14, fontWeight: "600" },
-  track: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.surfaceAlt,
-    overflow: "hidden",
+  sectionTitle: { color: colors.text, fontSize: 17, fontWeight: "700" },
+  sectionLink: { color: colors.textMuted, fontSize: 14, fontWeight: "600" },
+  cardsRow: { paddingHorizontal: spacing.lg, gap: spacing.md },
+
+  listTitle: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "700",
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.xl,
+    marginBottom: spacing.xs,
   },
-  fill: { height: 8, borderRadius: 4 },
 
   card: {
     flexDirection: "row",
@@ -292,6 +277,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+    marginHorizontal: spacing.lg,
   },
   cardIcon: {
     width: 44,

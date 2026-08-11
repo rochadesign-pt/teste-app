@@ -7,6 +7,7 @@ export type Category = {
   name: string;
   icon?: string;
   color?: string;
+  budget?: number;
 };
 
 export type Expense = {

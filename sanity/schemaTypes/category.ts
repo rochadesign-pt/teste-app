@@ -23,6 +23,13 @@ export const category = defineType({
       type: "string",
       description: "Cor em hexadecimal (ex.: #FF6B6B).",
     }),
+    defineField({
+      name: "budget",
+      title: "Orçamento mensal",
+      type: "number",
+      description: "Limite de gasto por mês para esta categoria (opcional).",
+      validation: (rule) => rule.positive(),
+    }),
   ],
   preview: {
     select: { title: "name", icon: "icon" },

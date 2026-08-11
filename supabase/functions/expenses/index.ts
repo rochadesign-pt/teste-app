@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
           date,
           paymentMethod,
           note,
-          "category": category->{ _id, name, icon, color }
+          "category": category->{ _id, name, icon, color, budget }
         }`,
         { ownerId: user.id },
       );

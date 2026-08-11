@@ -1,14 +1,26 @@
 export const colors = {
-  bg: "#0B1120",
-  surface: "#111827",
-  surfaceAlt: "#1F2937",
-  border: "#374151",
-  text: "#F9FAFB",
-  textMuted: "#9CA3AF",
+  // Base neutra quase preta (estilo da referência).
+  bg: "#0A0A0B",
+  surface: "#161618",
+  surfaceAlt: "#202023",
+  border: "#2A2A2E",
+  text: "#F5F5F7",
+  textMuted: "#8E8E93",
   primary: "#6366F1",
   primaryText: "#FFFFFF",
-  danger: "#EF4444",
-  success: "#10B981",
+  danger: "#FF453A",
+  success: "#34C759",
+
+  // Cores de acento por categoria (vivas, estilo iOS).
+  accents: {
+    orange: "#FF9500",
+    green: "#34C759",
+    blue: "#0A84FF",
+    purple: "#8B5CF6",
+    pink: "#FF375F",
+    yellow: "#FFD60A",
+    teal: "#40C8E0",
+  },
 };
 
 export const spacing = {
@@ -23,4 +35,5 @@ export const radius = {
   sm: 8,
   md: 12,
   lg: 20,
+  xl: 24,
 };
