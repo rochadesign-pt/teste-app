@@ -22,10 +22,10 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
-get() { grep -E "^$1=" "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d ' "'; }
-PROJECT="$(get SANITY_PROJECT_ID)"
-TOKEN="$(get SANITY_API_TOKEN)"
-DATASET="$(get SANITY_DATASET)"
+get() { grep -E "^$1=" "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d ' "' || true; }
+PROJECT="$(get SANITY_PROJECT_ID)" || true
+TOKEN="$(get SANITY_API_TOKEN)" || true
+DATASET="$(get SANITY_DATASET)" || true
 DATASET="${DATASET:-production}"
 
 if [ -z "$PROJECT" ] || [ -z "$TOKEN" ]; then
