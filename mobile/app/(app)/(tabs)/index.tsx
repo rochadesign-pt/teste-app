@@ -11,6 +11,9 @@ import {
 } from "react-native";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useAuth } from "@/contexts/AuthContext";
 import { api, type Expense, type Goal, type Subscription } from "@/lib/api";
 import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
 import { GoalCard } from "@/components/GoalCard";
@@ -23,6 +26,11 @@ function tint(hex: string, a: number) {
   const n = parseInt(hex.replace("#", ""), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
+function isoLocal(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
 function monthKeyOf(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
@@ -34,8 +42,14 @@ function monthLabel(key: string) {
   return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 }
 
+type Period = "week" | "month" | "year";
+
 export default function ExpensesScreen() {
   const router = useRouter();
+  const { session } = useAuth();
+  const name = (session?.user?.email ?? "").split("@")[0] || "Bem-vindo";
+  const initial = name.charAt(0).toUpperCase();
+  const [period, setPeriod] = useState<Period>("month");
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [subs, setSubs] = useState<Subscription[]>([]);
@@ -146,6 +160,77 @@ export default function ExpensesScreen() {
     () => subs.reduce((s, x) => s + (x.amount || 0), 0),
     [subs],
   );
+  const totalSaved = useMemo(
+    () => goals.reduce((s, g) => s + (g.saved || 0), 0),
+    [goals],
+  );
+
+  // Dados agregados por período (Semana / Mês / Ano).
+  const pd = useMemo(() => {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const addDays = (n: number) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + n);
+      return d;
+    };
+    let startStr: string;
+    let prevStartStr: string;
+    let prevEndStr: string;
+    let label: string;
+    let buckets: string[];
+
+    if (period === "week") {
+      startStr = isoLocal(addDays(-6));
+      prevStartStr = isoLocal(addDays(-13));
+      prevEndStr = isoLocal(addDays(-7));
+      label = "últimos 7 dias";
+      buckets = Array.from({ length: 7 }, (_, i) => isoLocal(addDays(-6 + i)));
+    } else if (period === "year") {
+      startStr = `${today.getFullYear()}-01-01`;
+      prevStartStr = `${today.getFullYear() - 1}-01-01`;
+      prevEndStr = `${today.getFullYear() - 1}-12-31`;
+      label = String(today.getFullYear());
+      buckets = Array.from({ length: today.getMonth() + 1 }, (_, i) =>
+        `${today.getFullYear()}-${String(i + 1).padStart(2, "0")}`,
+      );
+    } else {
+      startStr = `${monthKey}-01`;
+      const pm = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      prevStartStr = `${monthKeyOf(pm)}-01`;
+      prevEndStr = isoLocal(new Date(today.getFullYear(), today.getMonth(), 0));
+      label = monthLabel(monthKey);
+      buckets = Array.from({ length: today.getDate() }, (_, i) =>
+        `${monthKey}-${String(i + 1).padStart(2, "0")}`,
+      );
+    }
+    const endStr = isoLocal(today);
+    const inRange = expenses.filter((e) => e.date >= startStr && e.date <= endStr);
+    const total = inRange.reduce((s, e) => s + (e.amount || 0), 0);
+    const prev = expenses
+      .filter((e) => e.date >= prevStartStr && e.date <= prevEndStr)
+      .reduce((s, e) => s + (e.amount || 0), 0);
+
+    const perBucket = new Map<string, number>(buckets.map((b) => [b, 0]));
+    for (const e of inRange) {
+      const key = period === "year" ? e.date.slice(0, 7) : e.date;
+      if (perBucket.has(key))
+        perBucket.set(key, perBucket.get(key)! + (e.amount || 0));
+    }
+    let run = 0;
+    let series = buckets.map((b) => (run += perBucket.get(b) || 0));
+    if (series.length < 2) series = [0, ...series];
+
+    const divisor = period === "year" ? today.getMonth() + 1 : buckets.length || 1;
+    return {
+      total,
+      delta: total - prev,
+      hasPrev: prev > 0,
+      series,
+      label,
+      avg: total / divisor,
+      avgUnit: period === "year" ? "mês" : "dia",
+    };
+  }, [period, expenses, now, monthKey]);
 
   const deleteSub = async (id: string) => {
     try {
@@ -176,8 +261,37 @@ export default function ExpensesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <LinearGradient
+        colors={[
+          "rgba(99,102,241,0.16)",
+          "rgba(99,102,241,0.04)",
+          "transparent",
+        ]}
+        style={styles.topGlow}
+        pointerEvents="none"
+      />
       <View style={styles.topbar}>
-        <Text style={styles.brand}>Custos</Text>
+        <View style={styles.greetRow}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initial}</Text>
+          </View>
+          <View>
+            <Text style={styles.greetHi}>Olá 👋</Text>
+            <Text style={styles.greetName} numberOfLines={1}>
+              {name}
+            </Text>
+          </View>
+        </View>
+        <Pressable
+          onPress={() => router.push("/(app)/(tabs)/conta")}
+          hitSlop={8}
+        >
+          <Ionicons
+            name="person-circle-outline"
+            size={30}
+            color={colors.textMuted}
+          />
+        </Pressable>
       </View>
 
       {(pullDist > 0 || refreshing) && (
@@ -204,66 +318,116 @@ export default function ExpensesScreen() {
         }
         ListHeaderComponent={
           <View>
+            {/* Seletor de período */}
+            <View style={styles.periods}>
+              {(["week", "month", "year"] as Period[]).map((p) => {
+                const labels: Record<Period, string> = {
+                  week: "Semana",
+                  month: "Mês",
+                  year: "Ano",
+                };
+                const active = period === p;
+                return (
+                  <Pressable
+                    key={p}
+                    onPress={() => setPeriod(p)}
+                    style={[styles.periodBtn, active && styles.periodBtnActive]}
+                  >
+                    <Text
+                      style={[
+                        styles.periodText,
+                        active && styles.periodTextActive,
+                      ]}
+                    >
+                      {labels[p]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
             {/* Hero */}
             <View style={styles.hero}>
-              <Text style={styles.heroLabel}>Total gasto · {monthLabel(monthKey)}</Text>
-              <Text style={styles.heroAmount}>{formatMoney(monthTotal)}</Text>
-              {prevTotal > 0 && (
+              <Text style={styles.heroLabel}>Total gasto · {pd.label}</Text>
+              <Text style={styles.heroAmount}>{formatMoney(pd.total)}</Text>
+              {pd.hasPrev && (
                 <Text style={styles.heroDelta}>
-                  <Text style={{ color: delta >= 0 ? "#FF7A6B" : colors.success }}>
-                    {delta >= 0 ? "↑" : "↓"}
+                  <Text
+                    style={{
+                      color: pd.delta >= 0 ? "#FF7A6B" : colors.success,
+                    }}
+                  >
+                    {pd.delta >= 0 ? "↑" : "↓"}
                   </Text>{" "}
-                  {formatMoney(Math.abs(delta))} vs mês anterior
+                  {formatMoney(Math.abs(pd.delta))} vs período anterior
                 </Text>
               )}
-              {monthTotal > 0 && (
+              {pd.total > 0 && (
                 <View style={{ marginTop: spacing.sm }}>
-                  <Sparkline values={series} width={340} height={80} />
+                  <Sparkline values={pd.series} width={340} height={80} />
                 </View>
               )}
             </View>
 
-            {/* Orçamento */}
-            {totalBudget > 0 && (
-              <View style={styles.budget}>
-                <View style={styles.budgetRing}>
-                  <Ring
-                    size={66}
-                    stroke={6}
-                    progress={budgetUsed}
-                    color={
-                      budgetLeft < 0
-                        ? colors.danger
-                        : budgetUsed > 0.85
-                          ? colors.accents.orange
-                          : colors.success
-                    }
-                    glow={false}
-                  />
-                  <View style={styles.budgetPct}>
-                    <Text style={styles.budgetPctTxt}>
-                      {Math.round(budgetUsed * 100)}%
+            {/* Grid: Para onde vai o teu dinheiro */}
+            <Text style={styles.gridTitle}>Para onde vai o teu dinheiro</Text>
+            <View style={styles.grid}>
+              <View style={styles.gridCard}>
+                <Text style={styles.gridLabel}>Orçamento</Text>
+                {totalBudget > 0 ? (
+                  <>
+                    <View style={styles.gridRingRow}>
+                      <Ring
+                        size={34}
+                        stroke={4}
+                        progress={budgetUsed}
+                        color={
+                          budgetLeft < 0
+                            ? colors.danger
+                            : budgetUsed > 0.85
+                              ? colors.accents.orange
+                              : colors.success
+                        }
+                        glow={false}
+                      />
+                      <Text style={styles.gridValue}>
+                        {Math.round(budgetUsed * 100)}%
+                      </Text>
+                    </View>
+                    <Text style={styles.gridSub}>
+                      {budgetLeft >= 0
+                        ? `${formatMoney(budgetLeft)} livre`
+                        : `${formatMoney(-budgetLeft)} acima`}
                     </Text>
-                  </View>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.budgetBig}>
-                    {budgetLeft >= 0
-                      ? `${formatMoney(budgetLeft)} por gastar`
-                      : `${formatMoney(-budgetLeft)} acima`}
-                  </Text>
-                  <Text style={styles.budgetSub}>
-                    {budgetLeft < 0
-                      ? "Passaste o orçamento do mês."
-                      : budgetUsed < 0.5
-                        ? "Muito controlado — bom ritmo."
-                        : budgetUsed < 0.8
-                          ? "Dentro do orçamento previsto."
-                          : "A aproximar-te do limite."}
-                  </Text>
-                </View>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.gridValue}>—</Text>
+                    <Text style={styles.gridSub}>Sem orçamento</Text>
+                  </>
+                )}
               </View>
-            )}
+
+              <View style={styles.gridCard}>
+                <Text style={styles.gridLabel}>Média / {pd.avgUnit}</Text>
+                <Text style={styles.gridValue}>{formatMoney(pd.avg)}</Text>
+                <Text style={styles.gridSub}>neste período</Text>
+              </View>
+
+              <View style={styles.gridCard}>
+                <Text style={styles.gridLabel}>Recorrências</Text>
+                <Text style={styles.gridValue}>{formatMoney(subsMonthly)}</Text>
+                <Text style={styles.gridSub}>por mês</Text>
+              </View>
+
+              <View style={styles.gridCard}>
+                <Text style={styles.gridLabel}>Poupança</Text>
+                <Text style={styles.gridValue}>{formatMoney(totalSaved)}</Text>
+                <Text style={styles.gridSub}>
+                  {goals.length} {goals.length === 1 ? "objetivo" : "objetivos"}
+                </Text>
+              </View>
+            </View>
 
             {/* Categorias */}
             {cards.length > 0 && (
@@ -449,7 +613,11 @@ export default function ExpensesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  topGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 460 },
   topbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
@@ -462,6 +630,90 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   pullIndicator: { alignItems: "center", paddingVertical: spacing.sm },
+  greetRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+  },
+  greetHi: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.sans },
+  greetName: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+    letterSpacing: -0.3,
+    textTransform: "capitalize",
+    maxWidth: 200,
+  },
+  periods: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
+  },
+  periodBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+  },
+  periodBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  periodText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+  },
+  periodTextActive: { color: "#fff" },
+  gridTitle: {
+    color: colors.text,
+    fontSize: 19,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  gridCard: {
+    flexGrow: 1,
+    flexBasis: "47%",
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: 4,
+    minHeight: 92,
+  },
+  gridLabel: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
+  gridValue: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "500",
+    fontFamily: fonts.sans,
+    letterSpacing: -0.5,
+  },
+  gridSub: { color: colors.textMuted, fontSize: 12.5, fontFamily: fonts.sans },
+  gridRingRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   headerAction: {
     color: colors.textMuted,
     fontWeight: "600",
