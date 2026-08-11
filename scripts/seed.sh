@@ -6,7 +6,7 @@
 # O user id está em: Supabase -> Authentication -> Users -> (o teu utilizador) -> UID.
 # O token e o project id são lidos de supabase/functions/.env (não vão para lado nenhum).
 
-set -euo pipefail
+set -eo pipefail
 
 OWNER="${1:-}"
 if [ -z "$OWNER" ]; then
@@ -60,7 +60,7 @@ read -r -d '' BODY <<JSON || true
 JSON
 
 URL="https://${PROJECT}.api.sanity.io/v2021-10-21/data/mutate/${DATASET}?returnIds=true&visibility=sync"
-echo "▶️  A escrever no Sanity (projeto $PROJECT, dataset $DATASET) para o utilizador $OWNER…"
+echo "A escrever no Sanity (projeto ${PROJECT}, dataset ${DATASET}) para o utilizador ${OWNER} ..."
 
 HTTP=$(curl -sS -o /tmp/seed_resp.json -w "%{http_code}" \
   -X POST "$URL" \
