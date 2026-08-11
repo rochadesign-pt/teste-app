@@ -1,3 +1,3 @@
 /// <reference types="expo/types" />
 
-// NOTA: Este ficheiro deveria ser gerado automaticamente pelo Expo.
+// NOTE: This file should not be edited and should be in your git ignore

@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { Link, useFocusEffect } from "expo-router";
+import { Link, Stack, useFocusEffect } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, type Expense } from "@/lib/api";
 import { colors, radius, spacing } from "@/constants/theme";
@@ -23,6 +23,26 @@ function formatMoney(amount: number, currency = "EUR") {
     return `${amount.toFixed(2)} ${currency}`;
   }
 }
+
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthLabel(key: string) {
+  const [y, m] = key.split("-").map(Number);
+  const d = new Date(y, m - 1, 1);
+  const name = new Intl.DateTimeFormat("pt-PT", { month: "long" }).format(d);
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${y}`;
+}
+
+type CategorySlice = {
+  key: string;
+  name: string;
+  icon: string;
+  color: string;
+  total: number;
+};
 
 export default function ExpensesScreen() {
   const { signOut } = useAuth();
@@ -42,17 +62,45 @@ export default function ExpensesScreen() {
     }
   }, []);
 
-  // Recarrega sempre que o ecrã ganha foco (ex.: ao voltar de "Nova despesa").
   useFocusEffect(
     useCallback(() => {
       load();
     }, [load]),
   );
 
-  const total = useMemo(
-    () => expenses.reduce((sum, e) => sum + (e.amount || 0), 0),
-    [expenses],
+  const monthKey = currentMonthKey();
+
+  // Despesas do mês atual (base do cartão de resumo).
+  const monthExpenses = useMemo(
+    () => expenses.filter((e) => (e.date ?? "").startsWith(monthKey)),
+    [expenses, monthKey],
   );
+
+  const monthTotal = useMemo(
+    () => monthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0),
+    [monthExpenses],
+  );
+
+  // Repartição por categoria no mês (top 4).
+  const breakdown = useMemo<CategorySlice[]>(() => {
+    const map = new Map<string, CategorySlice>();
+    for (const e of monthExpenses) {
+      const key = e.category?._id ?? "sem";
+      const existing = map.get(key);
+      if (existing) {
+        existing.total += e.amount || 0;
+      } else {
+        map.set(key, {
+          key,
+          name: e.category?.name ?? "Sem categoria",
+          icon: e.category?.icon ?? "💸",
+          color: e.category?.color ?? colors.primary,
+          total: e.amount || 0,
+        });
+      }
+    }
+    return [...map.values()].sort((a, b) => b.total - a.total).slice(0, 4);
+  }, [monthExpenses]);
 
   const handleDelete = (item: Expense) => {
     Alert.alert("Apagar despesa", `Apagar "${item.title}"?`, [
@@ -74,13 +122,15 @@ export default function ExpensesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.summary}>
-        <Text style={styles.summaryLabel}>Total</Text>
-        <Text style={styles.summaryValue}>{formatMoney(total)}</Text>
-        <Pressable onPress={() => signOut()} hitSlop={12}>
-          <Text style={styles.signout}>Sair</Text>
-        </Pressable>
-      </View>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable onPress={() => signOut()} hitSlop={12}>
+              <Text style={styles.headerAction}>Sair</Text>
+            </Pressable>
+          ),
+        }}
+      />
 
       <FlatList
         data={expenses}
@@ -95,6 +145,48 @@ export default function ExpensesScreen() {
             }}
             tintColor={colors.textMuted}
           />
+        }
+        ListHeaderComponent={
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryMonth}>{monthLabel(monthKey)}</Text>
+            <Text style={styles.summaryValue}>{formatMoney(monthTotal)}</Text>
+            <Text style={styles.summaryCount}>
+              {monthExpenses.length}{" "}
+              {monthExpenses.length === 1 ? "despesa" : "despesas"} este mês
+            </Text>
+
+            {breakdown.length > 0 && (
+              <View style={styles.breakdown}>
+                {breakdown.map((slice) => {
+                  const pct =
+                    monthTotal > 0 ? (slice.total / monthTotal) * 100 : 0;
+                  return (
+                    <View key={slice.key} style={styles.slice}>
+                      <View style={styles.sliceHeader}>
+                        <Text style={styles.sliceName} numberOfLines={1}>
+                          {slice.icon} {slice.name}
+                        </Text>
+                        <Text style={styles.sliceAmount}>
+                          {formatMoney(slice.total)}
+                        </Text>
+                      </View>
+                      <View style={styles.track}>
+                        <View
+                          style={[
+                            styles.fill,
+                            {
+                              width: `${Math.max(pct, 3)}%`,
+                              backgroundColor: slice.color,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
         }
         ListEmptyComponent={
           !loading ? (
@@ -140,20 +232,57 @@ export default function ExpensesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  summary: {
-    padding: spacing.lg,
-    gap: spacing.xs,
-  },
-  summaryLabel: { color: colors.textMuted, fontSize: 13 },
-  summaryValue: { color: colors.text, fontSize: 36, fontWeight: "700" },
-  signout: {
-    position: "absolute",
-    right: 0,
-    bottom: 8,
+  headerAction: {
     color: colors.textMuted,
     fontWeight: "600",
+    fontSize: 15,
+    paddingRight: spacing.md,
   },
   list: { paddingHorizontal: spacing.lg, paddingBottom: 120, gap: spacing.sm },
+
+  summaryCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  summaryMonth: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  summaryValue: {
+    color: colors.text,
+    fontSize: 40,
+    fontWeight: "800",
+    marginTop: spacing.xs,
+  },
+  summaryCount: { color: colors.textMuted, fontSize: 14, marginTop: 2 },
+
+  breakdown: {
+    marginTop: spacing.lg,
+    gap: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.lg,
+  },
+  slice: { gap: spacing.xs },
+  sliceHeader: { flexDirection: "row", justifyContent: "space-between" },
+  sliceName: { color: colors.text, fontSize: 14, flex: 1, marginRight: 8 },
+  sliceAmount: { color: colors.textMuted, fontSize: 14, fontWeight: "600" },
+  track: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.surfaceAlt,
+    overflow: "hidden",
+  },
+  fill: { height: 8, borderRadius: 4 },
+
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -175,9 +304,11 @@ const styles = StyleSheet.create({
   cardTitle: { color: colors.text, fontSize: 16, fontWeight: "600" },
   cardMeta: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   cardAmount: { color: colors.text, fontSize: 16, fontWeight: "700" },
+
   empty: { alignItems: "center", marginTop: spacing.xl * 2, gap: spacing.xs },
   emptyTitle: { color: colors.text, fontSize: 18, fontWeight: "600" },
   emptyText: { color: colors.textMuted },
+
   fab: {
     position: "absolute",
     right: spacing.lg,
