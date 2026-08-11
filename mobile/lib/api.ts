@@ -71,7 +71,49 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   return payload as T;
 }
 
+export type Goal = {
+  _id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  target: number;
+  saved: number;
+  monthly?: number;
+};
+
+export type GoalInput = {
+  name: string;
+  target: number;
+  saved?: number;
+  monthly?: number;
+  icon?: string;
+  color?: string;
+};
+
 export const api = {
+  listGoals: () =>
+    apiFetch<{ goals: Goal[] }>("/goals").then((r) => r.goals),
+
+  createGoal: (input: GoalInput) =>
+    apiFetch<{ goal: Goal }>("/goals", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }).then((r) => r.goal),
+
+  updateGoal: (
+    id: string,
+    input: Partial<GoalInput> & { addSaved?: number },
+  ) =>
+    apiFetch<{ goal: Goal }>(`/goal?id=${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }).then((r) => r.goal),
+
+  deleteGoal: (id: string) =>
+    apiFetch<{ success: boolean }>(`/goal?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
+
   listCategories: () =>
     apiFetch<{ categories: Category[] }>("/categories").then(
       (r) => r.categories,

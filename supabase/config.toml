@@ -10,3 +10,9 @@ verify_jwt = true
 
 [functions.categories]
 verify_jwt = true
+
+[functions.goals]
+verify_jwt = true
+
+[functions.goal]
+verify_jwt = true
