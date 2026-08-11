@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -11,17 +10,19 @@ import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Field } from "@/components/ui";
-import { colors, spacing } from "@/constants/theme";
+import { colors, radius, spacing } from "@/constants/theme";
 
 export default function Login() {
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
+    setError(null);
     if (!email || !password) {
-      Alert.alert("Atenção", "Preenche o email e a palavra-passe.");
+      setError("Preenche o email e a palavra-passe.");
       return;
     }
     setLoading(true);
@@ -29,7 +30,7 @@ export default function Login() {
       await signIn(email.trim(), password);
       // O guard de navegação trata do redirecionamento.
     } catch (err) {
-      Alert.alert("Não foi possível entrar", (err as Error).message);
+      setError((err as Error).message || "Não foi possível entrar.");
     } finally {
       setLoading(false);
     }
@@ -47,6 +48,11 @@ export default function Login() {
         </View>
 
         <View style={styles.form}>
+          {error && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
           <Field
             label="Email"
             value={email}
@@ -83,6 +89,14 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: 28, fontWeight: "700" },
   subtitle: { color: colors.textMuted, fontSize: 15 },
   form: { gap: spacing.md },
+  errorBox: {
+    backgroundColor: "rgba(255,69,58,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,69,58,0.28)",
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  errorText: { color: colors.danger, fontSize: 14 },
   footer: {
     flexDirection: "row",
     justifyContent: "center",

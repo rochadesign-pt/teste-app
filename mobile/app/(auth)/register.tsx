@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -11,32 +10,38 @@ import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Field } from "@/components/ui";
-import { colors, spacing } from "@/constants/theme";
+import { colors, radius, spacing } from "@/constants/theme";
 
 export default function Register() {
   const { signUp } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   const handleRegister = async () => {
+    setError(null);
+    setInfo(null);
     if (!email || !password) {
-      Alert.alert("Atenção", "Preenche o email e a palavra-passe.");
+      setError("Preenche o email e a palavra-passe.");
       return;
     }
     if (password.length < 6) {
-      Alert.alert("Atenção", "A palavra-passe precisa de pelo menos 6 caracteres.");
+      setError("A palavra-passe precisa de pelo menos 6 caracteres.");
       return;
     }
     setLoading(true);
     try {
-      await signUp(email.trim(), password);
-      Alert.alert(
-        "Conta criada",
-        "Se a confirmação por email estiver ativa, verifica a tua caixa de entrada antes de entrar.",
-      );
+      const { needsConfirmation } = await signUp(email.trim(), password);
+      if (needsConfirmation) {
+        setInfo(
+          "Conta criada. Confirma o email na tua caixa de entrada e depois entra.",
+        );
+      }
+      // Se não precisar de confirmação, o guard entra automaticamente.
     } catch (err) {
-      Alert.alert("Não foi possível criar a conta", (err as Error).message);
+      setError((err as Error).message || "Não foi possível criar a conta.");
     } finally {
       setLoading(false);
     }
@@ -56,6 +61,16 @@ export default function Register() {
         </View>
 
         <View style={styles.form}>
+          {error && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+          {info && (
+            <View style={styles.infoBox}>
+              <Text style={styles.infoText}>{info}</Text>
+            </View>
+          )}
           <Field
             label="Email"
             value={email}
@@ -96,6 +111,22 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: 28, fontWeight: "700" },
   subtitle: { color: colors.textMuted, fontSize: 15 },
   form: { gap: spacing.md },
+  errorBox: {
+    backgroundColor: "rgba(255,69,58,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,69,58,0.28)",
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  errorText: { color: colors.danger, fontSize: 14 },
+  infoBox: {
+    backgroundColor: "rgba(52,199,89,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(52,199,89,0.28)",
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  infoText: { color: colors.success, fontSize: 14 },
   footer: {
     flexDirection: "row",
     justifyContent: "center",
