@@ -90,7 +90,37 @@ export type GoalInput = {
   color?: string;
 };
 
+export type Subscription = {
+  _id: string;
+  name: string;
+  amount: number;
+  icon?: string;
+  color?: string;
+};
+
 export const api = {
+  listSubscriptions: () =>
+    apiFetch<{ subscriptions: Subscription[] }>("/subscriptions").then(
+      (r) => r.subscriptions,
+    ),
+
+  createSubscription: (input: {
+    name: string;
+    amount: number;
+    icon?: string;
+    color?: string;
+  }) =>
+    apiFetch<{ subscription: Subscription }>("/subscriptions", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }).then((r) => r.subscription),
+
+  deleteSubscription: (id: string) =>
+    apiFetch<{ success: boolean }>(
+      `/subscription?id=${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ),
+
   listGoals: () =>
     apiFetch<{ goals: Goal[] }>("/goals").then((r) => r.goals),
 

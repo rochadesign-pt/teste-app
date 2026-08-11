@@ -24,6 +24,10 @@ export default function AppLayout() {
         name="goal-form"
         options={{ title: "Objetivo", presentation: "modal" }}
       />
+      <Stack.Screen
+        name="sub-form"
+        options={{ title: "Recorrência", presentation: "modal" }}
+      />
     </Stack>
   );
 }

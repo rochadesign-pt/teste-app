@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { api, type Expense, type Goal } from "@/lib/api";
+import { api, type Expense, type Goal, type Subscription } from "@/lib/api";
 import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
 import { GoalCard } from "@/components/GoalCard";
 import { Ring, Sparkline } from "@/components/charts";
@@ -38,6 +38,7 @@ export default function ExpensesScreen() {
   const router = useRouter();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [subs, setSubs] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pullDist, setPullDist] = useState(0);
@@ -45,12 +46,14 @@ export default function ExpensesScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [exp, gls] = await Promise.all([
+      const [exp, gls, sbs] = await Promise.all([
         api.listExpenses(),
         api.listGoals().catch(() => [] as Goal[]),
+        api.listSubscriptions().catch(() => [] as Subscription[]),
       ]);
       setExpenses(exp);
       setGoals(gls);
+      setSubs(sbs);
     } catch (err) {
       Alert.alert("Erro ao carregar", (err as Error).message);
     } finally {
@@ -139,6 +142,19 @@ export default function ExpensesScreen() {
   const budgetLeft = totalBudget - monthTotal;
 
   const delta = monthTotal - prevTotal;
+  const subsMonthly = useMemo(
+    () => subs.reduce((s, x) => s + (x.amount || 0), 0),
+    [subs],
+  );
+
+  const deleteSub = async (id: string) => {
+    try {
+      await api.deleteSubscription(id);
+      setSubs((p) => p.filter((s) => s._id !== id));
+    } catch (err) {
+      Alert.alert("Erro", (err as Error).message);
+    }
+  };
 
   const handleDelete = (item: Expense) => {
     Alert.alert("Apagar despesa", `Apagar "${item.title}"?`, [
@@ -311,6 +327,58 @@ export default function ExpensesScreen() {
               )}
             </View>
 
+            {/* Recorrências */}
+            <View style={styles.section}>
+              <View style={styles.secHead}>
+                <Text style={styles.secTitle}>Recorrências</Text>
+                <Pressable onPress={() => router.push("/(app)/sub-form")}>
+                  <Text style={styles.secLink}>+ Nova</Text>
+                </Pressable>
+              </View>
+              {subs.length > 0 ? (
+                <View style={styles.recurCard}>
+                  <Text style={styles.recurTotalLabel}>Total mensal</Text>
+                  <Text style={styles.recurTotal}>{formatMoney(subsMonthly)}</Text>
+                  <Text style={styles.recurYear}>
+                    {formatMoney(subsMonthly * 12)} por ano
+                  </Text>
+                  <View style={{ marginTop: spacing.md }}>
+                    {subs.map((s, i) => (
+                      <View
+                        key={s._id}
+                        style={[styles.recurRow, i > 0 && styles.recurDivider]}
+                      >
+                        <View
+                          style={[
+                            styles.recurIcon,
+                            { backgroundColor: tint(s.color ?? "#6366F1", 0.16) },
+                          ]}
+                        >
+                          <Text style={{ fontSize: 15 }}>{s.icon ?? "💳"}</Text>
+                        </View>
+                        <Text style={styles.recurName} numberOfLines={1}>
+                          {s.name}
+                        </Text>
+                        <Text style={styles.recurAmt}>{formatMoney(s.amount)}</Text>
+                        <Pressable onPress={() => deleteSub(s._id)} hitSlop={8}>
+                          <Text style={styles.recurX}>×</Text>
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : (
+                <Pressable
+                  style={styles.emptyGoal}
+                  onPress={() => router.push("/(app)/sub-form")}
+                >
+                  <Text style={styles.emptyGoalText}>
+                    + Adicionar subscrição / gasto fixo
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+
             <Text style={styles.listTitle}>Movimentos</Text>
           </View>
         }
@@ -465,6 +533,41 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyGoalText: { color: colors.textMuted, fontFamily: fonts.sans },
+  recurCard: {
+    marginHorizontal: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+  },
+  recurTotalLabel: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
+  recurTotal: {
+    color: colors.text,
+    fontSize: 26,
+    fontWeight: "500",
+    fontFamily: fonts.sans,
+    letterSpacing: -0.6,
+    marginTop: 2,
+  },
+  recurYear: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
+  recurRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: 10,
+  },
+  recurDivider: { borderTopWidth: 1, borderTopColor: colors.border },
+  recurIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recurName: { flex: 1, color: colors.text, fontSize: 15, fontFamily: fonts.sans },
+  recurAmt: { color: colors.text, fontSize: 15, fontWeight: "500", fontFamily: fonts.sans },
+  recurX: { color: colors.textMuted, fontSize: 22, paddingHorizontal: 4 },
 
   listTitle: {
     color: colors.text,
