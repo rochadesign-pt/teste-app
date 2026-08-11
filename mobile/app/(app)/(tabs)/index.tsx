@@ -17,6 +17,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, type Expense, type Goal, type Subscription } from "@/lib/api";
 import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
 import { GoalCard } from "@/components/GoalCard";
+import { GlassCard } from "@/components/GlassCard";
+import { Tappable } from "@/components/Tappable";
+import { Aura } from "@/components/Aura";
 import { Ring, Sparkline } from "@/components/charts";
 import { formatMoney } from "@/lib/format";
 import { usePullToRefresh } from "@/lib/usePullToRefresh";
@@ -282,15 +285,7 @@ export default function ExpensesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <LinearGradient
-        colors={[
-          "rgba(99,102,241,0.16)",
-          "rgba(99,102,241,0.04)",
-          "transparent",
-        ]}
-        style={styles.topGlow}
-        pointerEvents="none"
-      />
+      <Aura />
       <View style={styles.topbar}>
         <View style={styles.greetRow}>
           <View style={styles.avatar}>
@@ -385,7 +380,7 @@ export default function ExpensesScreen() {
               )}
               {pd.total > 0 && (
                 <View style={{ marginTop: spacing.sm }}>
-                  <Sparkline values={pd.series} width={340} height={80} />
+                  <Sparkline values={pd.series} width={340} height={84} />
                 </View>
               )}
             </View>
@@ -393,7 +388,7 @@ export default function ExpensesScreen() {
             {/* Grid: Para onde vai o teu dinheiro */}
             <Text style={styles.gridTitle}>Para onde vai o teu dinheiro</Text>
             <View style={styles.grid}>
-              <View style={styles.gridCard}>
+              <GlassCard style={styles.gridCard} contentStyle={styles.gridInner}>
                 <Text style={styles.gridLabel}>Orçamento</Text>
                 {totalBudget > 0 ? (
                   <>
@@ -427,27 +422,27 @@ export default function ExpensesScreen() {
                     <Text style={styles.gridSub}>Sem orçamento</Text>
                   </>
                 )}
-              </View>
+              </GlassCard>
 
-              <View style={styles.gridCard}>
+              <GlassCard style={styles.gridCard} contentStyle={styles.gridInner}>
                 <Text style={styles.gridLabel}>Média / {pd.avgUnit}</Text>
                 <Text style={styles.gridValue}>{formatMoney(pd.avg)}</Text>
                 <Text style={styles.gridSub}>neste período</Text>
-              </View>
+              </GlassCard>
 
-              <View style={styles.gridCard}>
+              <GlassCard style={styles.gridCard} contentStyle={styles.gridInner}>
                 <Text style={styles.gridLabel}>Recorrências</Text>
                 <Text style={styles.gridValue}>{formatMoney(subsMonthly)}</Text>
                 <Text style={styles.gridSub}>por mês</Text>
-              </View>
+              </GlassCard>
 
-              <View style={styles.gridCard}>
+              <GlassCard style={styles.gridCard} contentStyle={styles.gridInner}>
                 <Text style={styles.gridLabel}>Poupança</Text>
                 <Text style={styles.gridValue}>{formatMoney(totalSaved)}</Text>
                 <Text style={styles.gridSub}>
                   {goals.length} {goals.length === 1 ? "objetivo" : "objetivos"}
                 </Text>
-              </View>
+              </GlassCard>
             </View>
 
             {/* Análise do mês */}
@@ -553,7 +548,7 @@ export default function ExpensesScreen() {
                 </Pressable>
               </View>
               {subs.length > 0 ? (
-                <View style={styles.recurCard}>
+                <GlassCard style={styles.recurCard} contentStyle={styles.recurInner}>
                   <Text style={styles.recurTotalLabel}>Total mensal</Text>
                   <Text style={styles.recurTotal}>{formatMoney(subsMonthly)}</Text>
                   <Text style={styles.recurYear}>
@@ -583,7 +578,7 @@ export default function ExpensesScreen() {
                       </View>
                     ))}
                   </View>
-                </View>
+                </GlassCard>
               ) : (
                 <Pressable
                   style={styles.emptyGoal}
@@ -617,8 +612,9 @@ export default function ExpensesScreen() {
           ) : null
         }
         renderItem={({ item }) => (
-          <Pressable
-            style={styles.row}
+          <Tappable
+            style={styles.rowWrap}
+            scaleTo={0.98}
             onLongPress={() => handleDelete(item)}
             onPress={() =>
               router.push({
@@ -634,39 +630,45 @@ export default function ExpensesScreen() {
               })
             }
           >
-            <View
-              style={[
-                styles.badge,
-                { backgroundColor: tint(item.category?.color ?? "#6366F1", 0.16) },
-              ]}
-            >
-              <Text style={{ fontSize: 20 }}>{item.category?.icon ?? "💸"}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>{item.title}</Text>
-              <Text style={styles.rowMeta}>
-                {[item.category?.name, item.date].filter(Boolean).join(" · ")}
+            <GlassCard r={radius.md} contentStyle={styles.row}>
+              <View
+                style={[
+                  styles.badge,
+                  { backgroundColor: tint(item.category?.color ?? "#6366F1", 0.16) },
+                ]}
+              >
+                <Text style={{ fontSize: 20 }}>{item.category?.icon ?? "💸"}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{item.title}</Text>
+                <Text style={styles.rowMeta}>
+                  {[item.category?.name, item.date].filter(Boolean).join(" · ")}
+                </Text>
+              </View>
+              <Text style={styles.rowAmount}>
+                {formatMoney(item.amount, item.currency)}
               </Text>
-            </View>
-            <Text style={styles.rowAmount}>
-              {formatMoney(item.amount, item.currency)}
-            </Text>
-          </Pressable>
+            </GlassCard>
+          </Tappable>
         )}
       />
 
-      <Link href="/(app)/new" asChild>
-        <Pressable style={styles.fab}>
+      <Tappable style={styles.fab} scaleTo={0.9} onPress={() => router.push("/(app)/new")}>
+        <LinearGradient
+          colors={["#818CF8", "#6366F1", "#7C3AED"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabInner}
+        >
           <Text style={styles.fabText}>+</Text>
-        </Pressable>
-      </Link>
+        </LinearGradient>
+      </Tappable>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  topGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 460 },
   topbar: {
     flexDirection: "row",
     alignItems: "center",
@@ -746,17 +748,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
   },
-  gridCard: {
-    flexGrow: 1,
-    flexBasis: "47%",
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: 4,
-    minHeight: 92,
-  },
+  gridCard: { flexGrow: 1, flexBasis: "47%" },
+  gridInner: { padding: spacing.md, gap: 4, minHeight: 92 },
   gridLabel: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
   gridValue: {
     color: colors.text,
@@ -894,14 +887,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyGoalText: { color: colors.textMuted, fontFamily: fonts.sans },
-  recurCard: {
-    marginHorizontal: spacing.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-  },
+  recurCard: { marginHorizontal: spacing.lg },
+  recurInner: { padding: spacing.md },
   recurTotalLabel: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
   recurTotal: {
     color: colors.text,
@@ -940,16 +927,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
 
+  rowWrap: { marginHorizontal: spacing.lg },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginHorizontal: spacing.lg,
   },
   badge: {
     width: 44,
@@ -970,17 +953,19 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: spacing.lg,
     bottom: spacing.xl,
+    borderRadius: 30,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.5,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  fabInner: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: colors.primary,
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
   },
   fabText: { color: colors.primaryText, fontSize: 32, marginTop: -2, fontFamily: fonts.sans },
 });

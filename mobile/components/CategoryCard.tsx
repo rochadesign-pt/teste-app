@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ring } from "./charts";
-import { colors, fonts, radius, spacing } from "@/constants/theme";
+import { GlassCard } from "./GlassCard";
+import { colors, fonts, spacing } from "@/constants/theme";
 import { formatMoney } from "@/lib/format";
 
 export type CategoryCardData = {
@@ -24,7 +25,7 @@ export function CategoryCard({ data }: { data: CategoryCardData }) {
   const over = remaining !== undefined && remaining < 0;
 
   return (
-    <View style={styles.card}>
+    <GlassCard style={styles.card} contentStyle={styles.cardInner}>
       <View style={styles.ringWrap}>
         <Ring size={58} stroke={4} progress={progress} color={color} />
         <View
@@ -49,21 +50,14 @@ export function CategoryCard({ data }: { data: CategoryCardData }) {
       ) : (
         <Text style={styles.sub}>sem orçamento</Text>
       )}
-    </View>
+    </GlassCard>
   );
 }
 
 const RING = 58;
 const styles = StyleSheet.create({
-  card: {
-    width: 156,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
+  card: { width: 156 },
+  cardInner: { padding: spacing.md, gap: spacing.sm },
   ringWrap: { width: RING, height: RING },
   iconCircle: {
     position: "absolute",

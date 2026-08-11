@@ -9,6 +9,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient as ExpoGradient } from "expo-linear-gradient";
 import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
+import { GlassCard } from "@/components/GlassCard";
+import { Aura } from "@/components/Aura";
 import { formatMoney } from "@/lib/format";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
@@ -145,11 +147,12 @@ export default function Investir() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <Aura height={360} a="rgba(53,214,197,0.20)" b="rgba(99,102,241,0.20)" wash="rgba(53,214,197,0.07)" />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.h1}>Investir</Text>
 
         {/* Simulador */}
-        <View style={styles.card}>
+        <GlassCard contentStyle={styles.cardInner}>
           <Text style={styles.cardTitle}>Simulador de investimento</Text>
           <Text style={styles.cardSub}>Vê quanto rende com juros compostos.</Text>
           <View style={styles.grid}>
@@ -191,10 +194,10 @@ export default function Investir() {
               </View>
             </View>
           </ExpoGradient>
-        </View>
+        </GlassCard>
 
         {/* FIRE */}
-        <View style={styles.card}>
+        <GlassCard contentStyle={styles.cardInner}>
           <Text style={styles.cardTitle}>Liberdade financeira 🔥</Text>
           <Text style={styles.cardSub}>Quanto precisas para viver dos juros.</Text>
           <View style={styles.grid}>
@@ -237,7 +240,7 @@ export default function Investir() {
               </View>
             </View>
           </ExpoGradient>
-        </View>
+        </GlassCard>
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -255,14 +258,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.8,
     marginBottom: spacing.xs,
   },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
+  cardInner: { padding: spacing.lg, gap: spacing.sm },
   cardTitle: { color: colors.text, fontSize: 18, fontWeight: "600", fontFamily: fonts.sans },
   cardSub: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
   grid: {

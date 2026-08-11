@@ -55,50 +55,81 @@ export function Ring({
   );
 }
 
+// Curva suave (Catmull-Rom → Bézier) para o traço não ficar "às facadas".
+function smooth(pts: { x: number; y: number }[]) {
+  if (pts.length < 2) return "";
+  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(
+      1,
+    )}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
 export function Sparkline({
   values,
   width,
   height = 90,
-  color = colors.text,
+  from = "#A5B4FC",
+  to = "#6366F1",
 }: {
   values: number[];
   width: number;
   height?: number;
-  color?: string;
+  from?: string;
+  to?: string;
 }) {
   if (values.length < 2) values = [0, ...values];
-  const pad = 8;
+  const padY = 12;
+  const insetL = 5;
+  const insetR = 8;
+  const usableW = width - insetL - insetR;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
-  const x = (i: number) => (i / (values.length - 1)) * width;
-  const y = (v: number) => height - pad - ((v - min) / span) * (height - pad * 2);
-  let line = `M ${x(0).toFixed(1)} ${y(values[0]).toFixed(1)}`;
-  for (let i = 1; i < values.length; i++) {
-    line += ` L ${x(i).toFixed(1)} ${y(values[i]).toFixed(1)}`;
-  }
-  const area = `${line} L ${width} ${height} L 0 ${height} Z`;
+  const x = (i: number) => insetL + (i / (values.length - 1)) * usableW;
+  const y = (v: number) =>
+    height - padY - ((v - min) / span) * (height - padY * 2);
+  const pts = values.map((v, i) => ({ x: x(i), y: y(v) }));
+  const line = smooth(pts);
+  const area = `${line} L ${x(values.length - 1).toFixed(1)} ${height} L ${insetL} ${height} Z`;
   const lastX = x(values.length - 1);
   const lastY = y(values[values.length - 1]);
   return (
     <View style={{ width, height }}>
       <Svg width={width} height={height}>
         <Defs>
-          <LinearGradient id="spark" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={color} stopOpacity={0.22} />
-            <Stop offset="1" stopColor={color} stopOpacity={0} />
+          <LinearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={to} stopOpacity={0.28} />
+            <Stop offset="1" stopColor={to} stopOpacity={0} />
+          </LinearGradient>
+          <LinearGradient id="sparkLine" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor={from} />
+            <Stop offset="1" stopColor={to} />
           </LinearGradient>
         </Defs>
-        <Path d={area} fill="url(#spark)" />
+        <Path d={area} fill="url(#sparkFill)" />
         <Path
           d={line}
-          stroke={color}
-          strokeWidth={2}
+          stroke="url(#sparkLine)"
+          strokeWidth={2.4}
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
+          // @ts-expect-error web-only: brilho subtil no traço
+          style={{ filter: `drop-shadow(0 2px 6px ${to}66)` }}
         />
-        <Circle cx={lastX} cy={lastY} r={3.5} fill={color} />
+        <Circle cx={lastX} cy={lastY} r={7} fill={to} fillOpacity={0.18} />
+        <Circle cx={lastX} cy={lastY} r={3.4} fill="#fff" />
       </Svg>
     </View>
   );
