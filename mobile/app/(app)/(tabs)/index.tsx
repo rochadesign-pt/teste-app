@@ -668,6 +668,13 @@ export default function ExpensesScreen() {
         ListEmptyComponent={
           !loading ? (
             <View style={styles.empty}>
+              <View style={styles.emptyIcon}>
+                <Ionicons
+                  name="receipt-outline"
+                  size={26}
+                  color={colors.textMuted}
+                />
+              </View>
               <Text style={styles.emptyTitle}>Ainda sem despesas</Text>
               <Text style={styles.emptyText}>
                 Toca no + para registares a primeira.
@@ -1022,7 +1029,18 @@ const styles = StyleSheet.create({
   rowMeta: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans, marginTop: 2 },
   rowAmount: { color: colors.text, fontSize: 16, fontWeight: "500", fontFamily: fonts.sans },
 
-  empty: { alignItems: "center", marginTop: spacing.xl * 2, gap: spacing.xs },
+  empty: { alignItems: "center", marginTop: spacing.xl * 2, gap: spacing.sm },
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.xs,
+  },
   emptyTitle: { color: colors.text, fontSize: 18, fontWeight: "600", fontFamily: fonts.sans },
   emptyText: { color: colors.textMuted, fontFamily: fonts.sans },
 
