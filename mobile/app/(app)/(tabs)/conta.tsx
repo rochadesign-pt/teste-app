@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { Button } from "@/components/ui";
+import { GlassCard } from "@/components/GlassCard";
+import { Aura } from "@/components/Aura";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
 function Row({
@@ -53,11 +55,12 @@ export default function Conta() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <Aura height={260} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.h1}>Conta</Text>
 
         {/* Perfil */}
-        <View style={styles.profile}>
+        <GlassCard contentStyle={styles.profile}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initial}</Text>
           </View>
@@ -65,11 +68,11 @@ export default function Conta() {
             <Text style={styles.email}>{email}</Text>
             <Text style={styles.sub}>Sessão ativa</Text>
           </View>
-        </View>
+        </GlassCard>
 
         {/* Finanças */}
         <Text style={styles.groupTitle}>Finanças</Text>
-        <View style={styles.group}>
+        <GlassCard contentStyle={styles.group}>
           <Row
             icon="wallet"
             label="Rendimento mensal"
@@ -82,25 +85,25 @@ export default function Conta() {
             }
             onPress={() => router.push("/(app)/rendimento")}
           />
-        </View>
+        </GlassCard>
 
         {/* Segurança */}
         <Text style={styles.groupTitle}>Segurança</Text>
-        <View style={styles.group}>
+        <GlassCard contentStyle={styles.group}>
           <Row icon="lock-closed" label="Dados encriptados em trânsito (HTTPS)" />
           <View style={styles.divider} />
           <Row icon="shield-checkmark" label="Base de dados privada" />
           <View style={styles.divider} />
           <Row icon="person" label="Dados isolados por utilizador" />
-        </View>
+        </GlassCard>
 
         {/* Sobre */}
         <Text style={styles.groupTitle}>Sobre</Text>
-        <View style={styles.group}>
+        <GlassCard contentStyle={styles.group}>
           <Row icon="pricetag" label="Versão" value="1.0.0" />
           <View style={styles.divider} />
           <Row icon="server" label="Dados" value="Sanity + Supabase" />
-        </View>
+        </GlassCard>
 
         <View style={{ height: spacing.lg }} />
         <Button label="Terminar sessão" variant="danger" onPress={() => signOut()} />
@@ -125,10 +128,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: spacing.md,
   },
   avatar: {
@@ -158,13 +157,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     marginLeft: spacing.xs,
   },
-  group: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: "hidden",
-  },
+  group: {},
   row: {
     flexDirection: "row",
     alignItems: "center",
