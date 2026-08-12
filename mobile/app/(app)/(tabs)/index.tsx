@@ -57,6 +57,7 @@ export default function ExpensesScreen() {
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Bom dia" : hour < 20 ? "Boa tarde" : "Boa noite";
   const [period, setPeriod] = useState<Period>("month");
+  const [hidden, setHidden] = useState(false);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [subs, setSubs] = useState<Subscription[]>([]);
@@ -359,45 +360,31 @@ export default function ExpensesScreen() {
         }
         ListHeaderComponent={
           <View>
-            {/* Seletor de período */}
-            <View style={styles.periods}>
-              {(["week", "month", "year"] as Period[]).map((p) => {
-                const labels: Record<Period, string> = {
-                  week: "Semana",
-                  month: "Mês",
-                  year: "Ano",
-                };
-                const active = period === p;
-                return (
-                  <Pressable
-                    key={p}
-                    onPress={() => setPeriod(p)}
-                    style={[styles.periodBtn, active && styles.periodBtnActive]}
-                  >
-                    <Text
-                      style={[
-                        styles.periodText,
-                        active && styles.periodTextActive,
-                      ]}
-                    >
-                      {labels[p]}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {/* Hero */}
+            {/* Wallet card */}
             <FadeInUp delay={40}>
-            <View style={styles.hero}>
-              <Text style={styles.heroLabel}>Total gasto · {pd.label}</Text>
-              <Text style={styles.heroAmount}>{formatMoney(pd.total)}</Text>
-              {pd.hasPrev && (
-                <Text style={styles.heroDelta}>
+            <GlassCard
+              style={styles.wallet}
+              contentStyle={styles.walletInner}
+              fill={["#1C1C2C", "#141420"]}
+              sheen={0.18}
+            >
+              <View style={styles.walletTop}>
+                <Text style={styles.walletLabel}>Total gasto · {pd.label}</Text>
+                <Pressable onPress={() => setHidden((h) => !h)} hitSlop={10}>
+                  <Ionicons
+                    name={hidden ? "eye-off-outline" : "eye-outline"}
+                    size={18}
+                    color={colors.textMuted}
+                  />
+                </Pressable>
+              </View>
+              <Text style={styles.walletAmount}>
+                {hidden ? "••••• €" : formatMoney(pd.total)}
+              </Text>
+              {pd.hasPrev && !hidden && (
+                <Text style={styles.walletDelta}>
                   <Text
-                    style={{
-                      color: pd.delta >= 0 ? "#FF7A6B" : colors.success,
-                    }}
+                    style={{ color: pd.delta >= 0 ? "#FF7A6B" : colors.success }}
                   >
                     {pd.delta >= 0 ? "↑" : "↓"}
                   </Text>{" "}
@@ -405,10 +392,53 @@ export default function ExpensesScreen() {
                 </Text>
               )}
               {pd.total > 0 && (
-                <View style={{ marginTop: spacing.sm }}>
-                  <Sparkline values={pd.series} width={340} height={84} />
+                <View style={styles.walletChart}>
+                  <Sparkline values={pd.series} width={300} height={72} />
                 </View>
               )}
+              <View style={styles.segmented}>
+                {(["week", "month", "year"] as Period[]).map((p) => {
+                  const labels: Record<Period, string> = {
+                    week: "Semana",
+                    month: "Mês",
+                    year: "Ano",
+                  };
+                  const active = period === p;
+                  return (
+                    <Pressable
+                      key={p}
+                      onPress={() => setPeriod(p)}
+                      style={[styles.segBtn, active && styles.segBtnActive]}
+                    >
+                      <Text
+                        style={[styles.segTxt, active && styles.segTxtActive]}
+                      >
+                        {labels[p]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </GlassCard>
+
+            {/* Ações rápidas */}
+            <View style={styles.actions}>
+              <ActionBtn
+                icon="add"
+                label="Despesa"
+                primary
+                onPress={() => router.push("/(app)/new")}
+              />
+              <ActionBtn
+                icon="flag-outline"
+                label="Objetivo"
+                onPress={() => router.push("/(app)/goal-form")}
+              />
+              <ActionBtn
+                icon="trending-up"
+                label="Investir"
+                onPress={() => router.push("/(app)/(tabs)/investir")}
+              />
             </View>
             </FadeInUp>
 
@@ -738,8 +768,99 @@ export default function ExpensesScreen() {
   );
 }
 
+function ActionBtn({
+  icon,
+  label,
+  primary,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  primary?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Tappable style={{ flex: 1 }} scaleTo={0.95} onPress={onPress}>
+      <View style={[styles.actionBtn, primary && styles.actionBtnPrimary]}>
+        <Ionicons name={icon} size={18} color={primary ? "#fff" : colors.text} />
+        <Text style={[styles.actionTxt, primary && { color: "#fff" }]}>
+          {label}
+        </Text>
+      </View>
+    </Tappable>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  wallet: { marginHorizontal: spacing.lg, marginTop: spacing.md },
+  walletInner: { padding: spacing.lg },
+  walletTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  walletLabel: { color: colors.textMuted, fontSize: 14, fontFamily: fonts.sans },
+  walletAmount: {
+    color: colors.text,
+    fontSize: 44,
+    fontWeight: "500",
+    fontFamily: fonts.sans,
+    letterSpacing: -1.6,
+    marginTop: spacing.xs,
+  },
+  walletDelta: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontFamily: fonts.sans,
+    marginTop: 6,
+  },
+  walletChart: { marginTop: spacing.md, marginHorizontal: -2, alignItems: "center" },
+  segmented: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 999,
+    padding: 3,
+    marginTop: spacing.md,
+  },
+  segBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 999,
+    alignItems: "center",
+  },
+  segBtnActive: { backgroundColor: "rgba(255,255,255,0.14)" },
+  segTxt: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+  },
+  segTxtActive: { color: colors.text },
+  actions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+  },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    paddingVertical: 13,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  actionBtnPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
+  actionTxt: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+  },
   topbar: {
     flexDirection: "row",
     alignItems: "center",
