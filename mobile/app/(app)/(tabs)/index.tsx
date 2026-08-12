@@ -366,7 +366,7 @@ export default function ExpensesScreen() {
             <GlassCard
               style={styles.wallet}
               contentStyle={styles.walletInner}
-              fill={["#1C1C2C", "#141420"]}
+              fill={["#161618", "#111113"]}
               sheen={0.18}
             >
               <View style={styles.walletTop}>
@@ -394,7 +394,13 @@ export default function ExpensesScreen() {
               )}
               {pd.total > 0 && (
                 <View style={styles.walletChart}>
-                  <Sparkline values={pd.series} width={300} height={72} />
+                  <Sparkline
+                    values={pd.series}
+                    width={300}
+                    height={72}
+                    from="#E8E8EA"
+                    to="#FFFFFF"
+                  />
                 </View>
               )}
               <View style={styles.segmented}>
@@ -528,16 +534,41 @@ export default function ExpensesScreen() {
             {/* Análise do mês */}
             {monthExpenses.length > 0 && (
               <FadeInUp delay={180}>
-              <LinearGradient
-                colors={["#6366F1", "#5B4FE0", "#7C3AED"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.analise}
-              >
-                <View style={styles.blob1} />
-                <View style={styles.blob2} />
-                <Text style={styles.analiseLabel}>✦ Análise do mês</Text>
-                <Text style={styles.analiseHeadline}>{insights.headline}</Text>
+              <View style={styles.analise}>
+                <View style={styles.analiseTop}>
+                  <View style={styles.analiseRing}>
+                    <Ring
+                      size={64}
+                      stroke={7}
+                      progress={
+                        totalBudget > 0
+                          ? budgetUsed
+                          : insights.hasIncome
+                            ? Math.min(1, monthTotal / income)
+                            : 0
+                      }
+                      color={colors.lime}
+                      track="rgba(255,255,255,0.1)"
+                      glow={false}
+                    />
+                    <View style={styles.analiseRingCenter}>
+                      <Text style={styles.analiseRingPct}>
+                        {Math.round(
+                          (totalBudget > 0
+                            ? budgetUsed
+                            : insights.hasIncome
+                              ? Math.min(1, monthTotal / income)
+                              : 0) * 100,
+                        )}
+                        %
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.analiseLabel}>✦ Análise do mês</Text>
+                    <Text style={styles.analiseHeadline}>{insights.headline}</Text>
+                  </View>
+                </View>
                 <View style={styles.analiseRows}>
                   {insights.hasIncome ? (
                     <Text style={styles.analiseRow}>
@@ -568,7 +599,7 @@ export default function ExpensesScreen() {
                     </Text>
                   )}
                 </View>
-              </LinearGradient>
+              </View>
               </FadeInUp>
             )}
 
@@ -761,7 +792,7 @@ export default function ExpensesScreen() {
 
       <Tappable style={styles.fab} scaleTo={0.9} onPress={() => router.push("/(app)/new")}>
         <LinearGradient
-          colors={["#818CF8", "#6366F1", "#7C3AED"]}
+          colors={["#FFFFFF", "#ECECEE"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabInner}
@@ -787,8 +818,8 @@ function ActionBtn({
   return (
     <Tappable style={{ flex: 1 }} scaleTo={0.95} onPress={onPress}>
       <View style={[styles.actionBtn, primary && styles.actionBtnPrimary]}>
-        <Ionicons name={icon} size={18} color={primary ? "#fff" : colors.text} />
-        <Text style={[styles.actionTxt, primary && { color: "#fff" }]}>
+        <Ionicons name={icon} size={18} color={primary ? "#0A0A0B" : colors.text} />
+        <Text style={[styles.actionTxt, primary && { color: "#0A0A0B" }]}>
           {label}
         </Text>
       </View>
@@ -859,7 +890,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  actionBtnPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
+  actionBtnPrimary: { backgroundColor: "#FFFFFF", borderColor: "#FFFFFF" },
   actionTxt: {
     color: colors.text,
     fontSize: 14,
@@ -968,54 +999,53 @@ const styles = StyleSheet.create({
   analise: {
     marginHorizontal: spacing.lg,
     marginTop: spacing.xl,
-    borderRadius: radius.xl,
+    borderRadius: 19,
     padding: spacing.lg,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.14)",
     overflow: "hidden",
-    position: "relative",
   },
-  blob1: {
+  analiseTop: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  analiseRing: { width: 64, height: 64, alignItems: "center", justifyContent: "center" },
+  analiseRingCenter: {
     position: "absolute",
-    width: 170,
-    height: 170,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    top: -70,
-    right: -40,
+    width: 64,
+    height: 64,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  blob2: {
-    position: "absolute",
-    width: 90,
-    height: 90,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    bottom: -34,
-    left: 44,
+  analiseRingPct: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "700",
+    fontFamily: fonts.sans,
   },
   analiseLabel: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 13,
+    color: colors.lime,
+    fontSize: 12.5,
     fontWeight: "600",
     fontFamily: fonts.sans,
     letterSpacing: 0.3,
   },
   analiseHeadline: {
-    color: "#fff",
-    fontSize: 21,
+    color: colors.text,
+    fontSize: 17,
     fontWeight: "600",
     fontFamily: fonts.sans,
-    letterSpacing: -0.4,
-    lineHeight: 27,
-    marginTop: spacing.sm,
+    letterSpacing: -0.3,
+    lineHeight: 22,
+    marginTop: 3,
   },
   analiseRows: { marginTop: spacing.md, gap: 6 },
   analiseRow: {
-    color: "rgba(255,255,255,0.92)",
+    color: colors.textMuted,
     fontSize: 14,
     fontFamily: fonts.sans,
     lineHeight: 20,
   },
   analiseCta: {
-    color: "#fff",
+    color: colors.lime,
     fontWeight: "600",
     textDecorationLine: "underline",
   },
@@ -1067,7 +1097,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
   },
-  cardsRow: { paddingHorizontal: spacing.lg, gap: spacing.md },
+  cardsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm },
   secHead: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1175,9 +1205,9 @@ const styles = StyleSheet.create({
     right: spacing.lg,
     bottom: spacing.xl,
     borderRadius: 30,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.5,
-    shadowRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
@@ -1188,5 +1218,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  fabText: { color: colors.primaryText, fontSize: 32, marginTop: -2, fontFamily: fonts.sans },
+  fabText: { color: "#0A0A0B", fontSize: 32, marginTop: -2, fontFamily: fonts.sans },
 });

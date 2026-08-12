@@ -22,10 +22,16 @@ export function Button({
 }) {
   const bg =
     variant === "primary"
-      ? colors.primary
+      ? "#FFFFFF"
       : variant === "danger"
         ? colors.danger
         : "transparent";
+  const fg =
+    variant === "primary"
+      ? "#0A0A0B"
+      : variant === "danger"
+        ? "#FFFFFF"
+        : colors.text;
   return (
     <Pressable
       onPress={onPress}
@@ -37,16 +43,9 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={colors.primaryText} />
+        <ActivityIndicator color={fg} />
       ) : (
-        <Text
-          style={[
-            styles.buttonText,
-            variant === "ghost" && { color: colors.primary },
-          ]}
-        >
-          {label}
-        </Text>
+        <Text style={[styles.buttonText, { color: fg }]}>{label}</Text>
       )}
     </Pressable>
   );

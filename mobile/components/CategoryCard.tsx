@@ -33,7 +33,11 @@ export function CategoryCard({ data }: { data: CategoryCardData }) {
           {formatMoney(spent, currency)}
         </Text>
         <Text style={[styles.budget, over && { color: colors.danger }]}>
-          {hasBudget ? `/ ${formatMoney(budget as number, currency)}` : "sem orçamento"}
+          {!hasBudget
+            ? "sem limite"
+            : over
+              ? `${formatMoney(spent - (budget as number), currency)} acima`
+              : `/ ${formatMoney((budget as number) - spent, currency)} livre`}
         </Text>
       </View>
     </View>

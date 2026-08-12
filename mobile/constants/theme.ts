@@ -10,6 +10,7 @@ export const colors = {
   primaryText: "#FFFFFF",
   danger: "#FF453A",
   success: "#34C759",
+  lime: "#A3E635",
 
   // Cores de acento por categoria (vivas, estilo iOS).
   accents: {

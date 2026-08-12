@@ -8,6 +8,14 @@ function tint(hex: string, a: number) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
+// Ícone escuro em discos claros (amarelo/laranja), branco em discos
+// escuros/saturados (verde/vermelho/azul) — sempre com bom contraste.
+function iconColorFor(hex: string) {
+  const n = parseInt((hex || "#6366F1").replace("#", ""), 16);
+  const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return lum > 150 ? "#0A0A0B" : "#FFFFFF";
+}
+
 /**
  * Badge de ícone uniforme: anel de progresso + disco na cor + ícone de
  * linha ao centro. Base visual comum a categorias, objetivos e
@@ -50,7 +58,7 @@ export function IconBadge({
           },
         ]}
       >
-        <CategoryGlyph icon={icon} size={Math.round(disc * 0.57)} color="#0A0A0B" />
+        <CategoryGlyph icon={icon} size={Math.round(disc * 0.57)} color={iconColorFor(color)} />
       </View>
     </View>
   );

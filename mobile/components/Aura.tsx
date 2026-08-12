@@ -8,9 +8,9 @@ import { LinearGradient } from "expo-linear-gradient";
  */
 export function Aura({
   height = 560,
-  a = "rgba(99,102,241,0.34)",
-  b = "rgba(124,58,237,0.24)",
-  wash = "rgba(99,102,241,0.10)",
+  a = "rgba(163,230,53,0.22)",
+  b = "rgba(132,204,22,0.14)",
+  wash = "rgba(163,230,53,0.07)",
 }: {
   height?: number;
   a?: string;
