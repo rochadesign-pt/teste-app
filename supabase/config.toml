@@ -31,3 +31,6 @@ verify_jwt = true
 
 [functions.profile]
 verify_jwt = true
+
+[functions.category]
+verify_jwt = true

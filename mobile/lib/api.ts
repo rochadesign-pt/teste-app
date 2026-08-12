@@ -19,6 +19,13 @@ export type Category = {
   budget?: number;
 };
 
+export type CategoryInput = {
+  name: string;
+  icon?: string;
+  color?: string;
+  budget?: number;
+};
+
 export type Expense = {
   _id: string;
   title: string;
@@ -124,6 +131,47 @@ export type Profile = {
   monthlyIncome: number;
   mealAllowance: number;
 };
+
+// --- Categorias: overlay local (edições/eliminações por sincronizar) ---
+type CatEdits = Record<string, Partial<CategoryInput>>;
+
+async function applyCatOverrides(server: Category[]): Promise<Category[]> {
+  const edits = await localGet<CatEdits>("catEdits", {});
+  const deletes = await localGet<string[]>("catDeletes", []);
+  const del = new Set(deletes);
+  return server
+    .filter((c) => !del.has(c._id))
+    .map((c) => (edits[c._id] ? { ...c, ...edits[c._id] } : c));
+}
+
+async function flushCatOverrides() {
+  const deletes = await localGet<string[]>("catDeletes", []);
+  for (const id of deletes) {
+    if (id.startsWith("local-")) continue;
+    try {
+      await apiFetch(`/category?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const d = await localGet<string[]>("catDeletes", []);
+      await localSet("catDeletes", d.filter((x) => x !== id));
+    } catch {
+      /* tenta na próxima */
+    }
+  }
+  const edits = await localGet<CatEdits>("catEdits", {});
+  for (const [id, patch] of Object.entries(edits)) {
+    if (id.startsWith("local-")) continue;
+    try {
+      await apiFetch(`/category?id=${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      });
+      const e = await localGet<CatEdits>("catEdits", {});
+      delete e[id];
+      await localSet("catEdits", e);
+    } catch {
+      /* tenta na próxima */
+    }
+  }
+}
 
 export const api = {
   listSubscriptions: () =>
@@ -285,21 +333,72 @@ export const api = {
       method: "DELETE",
     }),
 
-  listCategories: () =>
-    apiFetch<{ categories: Category[] }>("/categories").then(
-      (r) => r.categories,
-    ),
+  listCategories: async () => {
+    try {
+      const r = await apiFetch<{ categories: Category[] }>("/categories");
+      const list = await applyCatOverrides(r.categories);
+      await localSet("categories", list);
+      void flushCatOverrides();
+      return list;
+    } catch {
+      return localGet<Category[]>("categories", []);
+    }
+  },
 
-  createCategory: (input: {
-    name: string;
-    icon?: string;
-    color?: string;
-    budget?: number;
-  }) =>
-    apiFetch<{ category: Category }>("/categories", {
-      method: "POST",
-      body: JSON.stringify(input),
-    }).then((r) => r.category),
+  createCategory: async (input: CategoryInput) => {
+    try {
+      const r = await apiFetch<{ category: Category }>("/categories", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+      const list = await localGet<Category[]>("categories", []);
+      await localSet("categories", [...list, r.category]);
+      return r.category;
+    } catch {
+      const cat: Category = { _id: localId(), ...input };
+      const list = await localGet<Category[]>("categories", []);
+      await localSet("categories", [...list, cat]);
+      return cat;
+    }
+  },
+
+  updateCategory: async (id: string, input: Partial<CategoryInput>) => {
+    const list = await localGet<Category[]>("categories", []);
+    const next = list.map((c) => (c._id === id ? { ...c, ...input } : c));
+    await localSet("categories", next);
+    const updated = (next.find((c) => c._id === id) ?? { _id: id, ...input }) as Category;
+    if (!id.startsWith("local-")) {
+      try {
+        await apiFetch(`/category?id=${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          body: JSON.stringify(input),
+        });
+      } catch {
+        const edits = await localGet<CatEdits>("catEdits", {});
+        edits[id] = { ...(edits[id] || {}), ...input };
+        await localSet("catEdits", edits);
+      }
+    }
+    return updated;
+  },
+
+  deleteCategory: async (id: string) => {
+    const list = await localGet<Category[]>("categories", []);
+    await localSet("categories", list.filter((c) => c._id !== id));
+    if (id.startsWith("local-")) {
+      const edits = await localGet<CatEdits>("catEdits", {});
+      delete edits[id];
+      await localSet("catEdits", edits);
+    } else {
+      try {
+        await apiFetch(`/category?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      } catch {
+        const deletes = await localGet<string[]>("catDeletes", []);
+        if (!deletes.includes(id)) await localSet("catDeletes", [...deletes, id]);
+      }
+    }
+    return { success: true };
+  },
 
   listExpenses: () =>
     apiFetch<{ expenses: Expense[] }>("/expenses").then((r) => r.expenses),

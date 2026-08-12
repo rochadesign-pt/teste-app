@@ -36,6 +36,11 @@ export default function AppLayout() {
         name="rendimento"
         options={{ title: "Rendimento", presentation: "modal" }}
       />
+      <Stack.Screen name="categorias" options={{ title: "Categorias" }} />
+      <Stack.Screen
+        name="categoria-form"
+        options={{ title: "Categoria", presentation: "modal" }}
+      />
     </Stack>
   );
 }

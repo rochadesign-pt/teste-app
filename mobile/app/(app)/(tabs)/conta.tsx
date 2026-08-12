@@ -85,6 +85,12 @@ export default function Conta() {
             }
             onPress={() => router.push("/(app)/rendimento")}
           />
+          <View style={styles.divider} />
+          <Row
+            icon="pricetags"
+            label="Categorias e orçamentos"
+            onPress={() => router.push("/(app)/categorias")}
+          />
         </GlassCard>
 
         {/* Segurança */}

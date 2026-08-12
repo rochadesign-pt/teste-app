@@ -4,11 +4,17 @@ Copia e cola este bloco no terminal, **na raiz do projeto** (`teste-app/`),
 com o Supabase CLI já ligado ao projeto (`supabase link` já feito antes).
 
 ```bash
-# Publica as 3 novas edge functions (investimentos + rendimento)
+# Publica as edge functions (investimentos + rendimento + categorias)
 supabase functions deploy investments
 supabase functions deploy investment
 supabase functions deploy profile
+supabase functions deploy category
 ```
+
+> `category` é a mais recente (editar/apagar categorias e orçamentos).
+> Criar e listar categorias já funcionava antes. Mesmo sem este deploy, a
+> app deixa-te gerir categorias no telemóvel (guarda localmente) e sincroniza
+> quando publicares.
 
 Isto ativa em produção:
 
