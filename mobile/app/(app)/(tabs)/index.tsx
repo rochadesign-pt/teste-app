@@ -20,6 +20,7 @@ import { GoalCard } from "@/components/GoalCard";
 import { GlassCard } from "@/components/GlassCard";
 import { GradientStatCard } from "@/components/GradientStatCard";
 import { Tappable } from "@/components/Tappable";
+import { FadeInUp } from "@/components/FadeInUp";
 import { Aura } from "@/components/Aura";
 import { Ring, Sparkline } from "@/components/charts";
 import { formatMoney } from "@/lib/format";
@@ -387,6 +388,7 @@ export default function ExpensesScreen() {
             </View>
 
             {/* Hero */}
+            <FadeInUp delay={40}>
             <View style={styles.hero}>
               <Text style={styles.heroLabel}>Total gasto · {pd.label}</Text>
               <Text style={styles.heroAmount}>{formatMoney(pd.total)}</Text>
@@ -408,8 +410,10 @@ export default function ExpensesScreen() {
                 </View>
               )}
             </View>
+            </FadeInUp>
 
             {/* Grid: Para onde vai o teu dinheiro */}
+            <FadeInUp delay={110}>
             <Text style={styles.gridTitle}>Para onde vai o teu dinheiro</Text>
             <View style={styles.grid}>
               <GradientStatCard
@@ -488,9 +492,11 @@ export default function ExpensesScreen() {
                 </Text>
               </GradientStatCard>
             </View>
+            </FadeInUp>
 
             {/* Análise do mês */}
             {monthExpenses.length > 0 && (
+              <FadeInUp delay={180}>
               <LinearGradient
                 colors={["#6366F1", "#5B4FE0", "#7C3AED"]}
                 start={{ x: 0, y: 0 }}
@@ -532,6 +538,7 @@ export default function ExpensesScreen() {
                   )}
                 </View>
               </LinearGradient>
+              </FadeInUp>
             )}
 
             {/* Categorias */}

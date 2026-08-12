@@ -9,9 +9,21 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { api } from "@/lib/api";
 import { Ring } from "@/components/charts";
-import { Button, Field } from "@/components/ui";
+import { Slider } from "@/components/Slider";
+import { Aura } from "@/components/Aura";
+import { Button } from "@/components/ui";
 import { formatMoney } from "@/lib/format";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
+
+function tint(hex: string, a: number) {
+  const n = parseInt((hex || "#6366F1").replace("#", ""), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+function lighten(hex: string, a = 0.5) {
+  const n = parseInt((hex || "#6366F1").replace("#", ""), 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * a);
+  return `#${((1 << 24) + (mix((n >> 16) & 255) << 16) + (mix((n >> 8) & 255) << 8) + mix(n & 255)).toString(16).slice(1)}`;
+}
 
 export default function GoalDetail() {
   const router = useRouter();
@@ -32,13 +44,15 @@ export default function GoalDetail() {
   const monthly = Number(p.monthly) || 0;
 
   const [saved, setSaved] = useState(Number(p.saved) || 0);
-  const [amount, setAmount] = useState("");
+  const [slideAmt, setSlideAmt] = useState(50);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const pct = target > 0 ? Math.min(1, saved / target) : 0;
   const left = Math.max(0, target - saved);
+  const sliderMax = Math.max(50, Math.ceil(left / 10) * 10);
+  const amt = Math.min(slideAmt, sliderMax);
 
   const add = async (v: number) => {
     if (!v || v <= 0) return;
@@ -47,7 +61,6 @@ export default function GoalDetail() {
     try {
       const g = await api.updateGoal(id, { addSaved: v });
       setSaved(g.saved);
-      setAmount("");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -74,53 +87,71 @@ export default function GoalDetail() {
         : `Faltam ${formatMoney(left)}`;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: name }} />
+    <View style={styles.container}>
+      <Aura
+        height={300}
+        a={tint(color, 0.3)}
+        b={tint(color, 0.14)}
+        wash={tint(color, 0.08)}
+      />
+      <ScrollView contentContainerStyle={styles.content}>
+        <Stack.Screen options={{ title: name }} />
 
-      <View style={styles.ringWrap}>
-        <Ring size={120} stroke={9} progress={pct} color={color} glow />
-        <View style={styles.ringCenter}>
-          <Text style={styles.pct}>{Math.round(pct * 100)}%</Text>
+        <View style={styles.ringWrap}>
+          <Ring size={120} stroke={9} progress={pct} color={color} glow />
+          <View style={styles.ringCenter}>
+            <Text style={styles.pct}>{Math.round(pct * 100)}%</Text>
+          </View>
         </View>
-      </View>
 
-      <Text style={styles.name}>
-        {icon} {name}
-      </Text>
-      <Text style={styles.sub}>
-        {formatMoney(saved)} de {formatMoney(target)}
-      </Text>
-      <Text style={styles.eta}>{eta}</Text>
+        <Text style={styles.name}>
+          {icon} {name}
+        </Text>
+        <Text style={styles.sub}>
+          {formatMoney(saved)} de {formatMoney(target)}
+        </Text>
+        <Text style={styles.eta}>{eta}</Text>
 
-      {error && <Text style={styles.error}>{error}</Text>}
+        {error && <Text style={styles.error}>{error}</Text>}
 
-      <Text style={styles.label}>Adicionar poupança</Text>
-      <View style={styles.quick}>
-        {[50, 100, 250].map((v) => (
-          <Pressable
-            key={v}
-            style={styles.chip}
-            disabled={busy}
-            onPress={() => add(v)}
-          >
-            <Text style={styles.chipText}>+ {formatMoney(v)}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <Field
-        label=""
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="decimal-pad"
-        placeholder="Outro valor"
-      />
-      <Button
-        label="Adicionar"
-        loading={busy}
-        onPress={() => add(parseFloat(amount.replace(",", ".")))}
-      />
+        <Text style={styles.label}>Adicionar poupança</Text>
+        <View style={styles.quick}>
+          {[50, 100, 250].map((v) => (
+            <Pressable
+              key={v}
+              style={styles.chip}
+              disabled={busy}
+              onPress={() => add(v)}
+            >
+              <Text style={styles.chipText}>+ {formatMoney(v)}</Text>
+            </Pressable>
+          ))}
+        </View>
 
-      <View style={{ height: spacing.md }} />
+        {left > 0 && (
+          <View style={styles.sliderBlock}>
+            <View style={styles.sliderHead}>
+              <Text style={styles.sliderCaption}>Ou arrasta um valor</Text>
+              <Text style={[styles.sliderValue, { color }]}>{formatMoney(amt)}</Text>
+            </View>
+            <Slider
+              value={amt}
+              min={0}
+              max={sliderMax}
+              step={5}
+              onChange={setSlideAmt}
+              from={lighten(color)}
+              to={color}
+            />
+          </View>
+        )}
+        <Button
+          label={amt > 0 ? `Adicionar ${formatMoney(amt)}` : "Adicionar"}
+          loading={busy}
+          onPress={() => add(amt)}
+        />
+
+        <View style={{ height: spacing.md }} />
       <Button
         label="Editar objetivo"
         variant="ghost"
@@ -131,16 +162,17 @@ export default function GoalDetail() {
           })
         }
       />
-      {confirmDelete ? (
-        <Button label="Confirmar eliminação" variant="danger" onPress={remove} />
-      ) : (
-        <Button
-          label="Apagar objetivo"
-          variant="ghost"
-          onPress={() => setConfirmDelete(true)}
-        />
-      )}
-    </ScrollView>
+        {confirmDelete ? (
+          <Button label="Confirmar eliminação" variant="danger" onPress={remove} />
+        ) : (
+          <Button
+            label="Apagar objetivo"
+            variant="ghost"
+            onPress={() => setConfirmDelete(true)}
+          />
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -184,6 +216,23 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontFamily: fonts.sans,
     marginTop: spacing.lg,
+  },
+  sliderBlock: { alignSelf: "stretch", marginTop: spacing.xs, gap: 4 },
+  sliderHead: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  sliderCaption: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontFamily: fonts.sans,
+  },
+  sliderValue: {
+    fontSize: 18,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+    letterSpacing: -0.3,
   },
   quick: { flexDirection: "row", gap: spacing.sm, alignSelf: "stretch" },
   chip: {
