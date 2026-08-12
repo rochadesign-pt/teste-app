@@ -15,17 +15,21 @@ Deno.serve(async (req) => {
   try {
     if (req.method === "GET") {
       const existing = await sanity.fetch(
-        `*[_type == "profile" && ownerId == $ownerId][0]{ _id, monthlyIncome }`,
+        `*[_type == "profile" && ownerId == $ownerId][0]{ _id, monthlyIncome, mealAllowance }`,
         { ownerId: user.id },
       );
       return jsonResponse({
-        profile: { monthlyIncome: existing?.monthlyIncome ?? 0 },
+        profile: {
+          monthlyIncome: existing?.monthlyIncome ?? 0,
+          mealAllowance: existing?.mealAllowance ?? 0,
+        },
       });
     }
 
     if (req.method === "PUT" || req.method === "PATCH") {
       const body = await req.json();
       const income = Math.max(0, Number(body.monthlyIncome) || 0);
+      const meal = Math.max(0, Number(body.mealAllowance) || 0);
 
       const existingId = await sanity.fetch(
         `*[_type == "profile" && ownerId == $ownerId][0]._id`,
@@ -33,15 +37,21 @@ Deno.serve(async (req) => {
       );
 
       if (existingId) {
-        await sanity.patch(existingId).set({ monthlyIncome: income }).commit();
+        await sanity
+          .patch(existingId)
+          .set({ monthlyIncome: income, mealAllowance: meal })
+          .commit();
       } else {
         await sanity.create({
           _type: "profile",
           monthlyIncome: income,
+          mealAllowance: meal,
           ownerId: user.id,
         });
       }
-      return jsonResponse({ profile: { monthlyIncome: income } });
+      return jsonResponse({
+        profile: { monthlyIncome: income, mealAllowance: meal },
+      });
     }
 
     return jsonResponse({ error: "Método não suportado." }, 405);

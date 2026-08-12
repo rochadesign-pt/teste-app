@@ -121,6 +121,7 @@ export type InvestmentInput = {
 
 export type Profile = {
   monthlyIncome: number;
+  mealAllowance: number;
 };
 
 export const api = {

@@ -46,7 +46,7 @@ export default function Conta() {
     useCallback(() => {
       api
         .getProfile()
-        .then((p) => setIncome(p.monthlyIncome || 0))
+        .then((p) => setIncome((p.monthlyIncome || 0) + (p.mealAllowance || 0)))
         .catch(() => setIncome(0));
     }, []),
   );

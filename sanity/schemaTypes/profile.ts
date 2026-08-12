@@ -9,7 +9,13 @@ export const profile = defineType({
   fields: [
     defineField({
       name: "monthlyIncome",
-      title: "Rendimento mensal (€)",
+      title: "Salário líquido (€)",
+      type: "number",
+      validation: (rule) => rule.min(0),
+    }),
+    defineField({
+      name: "mealAllowance",
+      title: "Subsídio de alimentação (€/mês)",
       type: "number",
       validation: (rule) => rule.min(0),
     }),
@@ -22,10 +28,10 @@ export const profile = defineType({
     }),
   ],
   preview: {
-    select: { income: "monthlyIncome", owner: "ownerId" },
-    prepare({ income, owner }) {
+    select: { income: "monthlyIncome", meal: "mealAllowance", owner: "ownerId" },
+    prepare({ income, meal, owner }) {
       return {
-        title: `${income ?? 0} €/mês`,
+        title: `${(income ?? 0) + (meal ?? 0)} €/mês`,
         subtitle: owner,
       };
     },

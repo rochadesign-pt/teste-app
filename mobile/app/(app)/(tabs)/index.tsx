@@ -70,12 +70,14 @@ export default function ExpensesScreen() {
         api.listExpenses(),
         api.listGoals().catch(() => [] as Goal[]),
         api.listSubscriptions().catch(() => [] as Subscription[]),
-        api.getProfile().catch(() => ({ monthlyIncome: 0 })),
+        api
+          .getProfile()
+          .catch(() => ({ monthlyIncome: 0, mealAllowance: 0 })),
       ]);
       setExpenses(exp);
       setGoals(gls);
       setSubs(sbs);
-      setIncome(prof.monthlyIncome || 0);
+      setIncome((prof.monthlyIncome || 0) + (prof.mealAllowance || 0));
     } catch (err) {
       Alert.alert("Erro ao carregar", (err as Error).message);
     } finally {
@@ -488,7 +490,7 @@ export default function ExpensesScreen() {
                   ) : (
                     <Pressable onPress={() => router.push("/(app)/rendimento")}>
                       <Text style={[styles.analiseRow, styles.analiseCta]}>
-                        💰 Define o teu salário para veres quanto poupas →
+                        💰 Define o teu rendimento para veres quanto poupas →
                       </Text>
                     </Pressable>
                   )}
