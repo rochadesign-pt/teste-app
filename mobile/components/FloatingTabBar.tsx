@@ -105,10 +105,5 @@ const styles = StyleSheet.create({
   },
   iconActive: {
     backgroundColor: colors.lime,
-    shadowColor: colors.lime,
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 10,
   },
 });
