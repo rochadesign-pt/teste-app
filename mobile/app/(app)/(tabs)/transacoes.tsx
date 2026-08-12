@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import {
-  FlatList,
   Pressable,
   SectionList,
   StyleSheet,
@@ -109,38 +108,33 @@ export default function Transacoes() {
         )}
       </View>
 
-      {/* Filtro por categoria */}
+      {/* Filtro por categoria — linha que quebra (sem scroll horizontal, que
+          colapsa a altura no iOS). */}
       {categories.length > 0 && (
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filters}
-          contentContainerStyle={styles.filtersRow}
-          data={[{ _id: "__all", name: "Todas", icon: "", color: "" } as Category, ...categories]}
-          keyExtractor={(c) => c._id}
-          renderItem={({ item }) => {
-            const isAll = item._id === "__all";
-            const active = isAll ? catFilter === null : catFilter === item._id;
-            const color = item.color || colors.primary;
-            return (
-              <Pressable
-                onPress={() => setCatFilter(isAll ? null : item._id)}
-                style={[
-                  styles.filterChip,
-                  active && { backgroundColor: tint(color, 0.16), borderColor: color },
-                ]}
-              >
-                <Text
-                  style={[styles.filterText, active && { color }]}
-                  numberOfLines={1}
+        <View style={styles.filtersRow}>
+          {[{ _id: "__all", name: "Todas", icon: "", color: "" } as Category, ...categories].map(
+            (item) => {
+              const isAll = item._id === "__all";
+              const active = isAll ? catFilter === null : catFilter === item._id;
+              const color = item.color || colors.primary;
+              return (
+                <Pressable
+                  key={item._id}
+                  onPress={() => setCatFilter(isAll ? null : item._id)}
+                  style={[
+                    styles.filterChip,
+                    active && { backgroundColor: tint(color, 0.16), borderColor: color },
+                  ]}
                 >
-                  {item.icon ? item.icon + " " : ""}
-                  {item.name}
-                </Text>
-              </Pressable>
-            );
-          }}
-        />
+                  <Text style={[styles.filterText, active && { color }]} numberOfLines={1}>
+                    {item.icon ? item.icon + " " : ""}
+                    {item.name}
+                  </Text>
+                </Pressable>
+              );
+            },
+          )}
+        </View>
       )}
 
       <SectionList
@@ -250,31 +244,24 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     height: "100%",
   },
-  // Altura explícita e generosa no contentor: o iOS não a pode colapsar,
-  // e os chips (altura fixa) ficam centrados sem cortar.
-  filters: { marginTop: spacing.md, height: 52 },
   filtersRow: {
-    alignItems: "center",
-    paddingHorizontal: spacing.lg,
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
   },
   filterChip: {
-    height: 38,
     flexDirection: "row",
     alignItems: "center",
+    paddingVertical: 9,
     paddingHorizontal: 14,
     borderRadius: 999,
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  filterText: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 16,
-    fontFamily: fonts.sans,
-    includeFontPadding: false,
-  },
+  filterText: { color: colors.text, fontSize: 14, fontFamily: fonts.sans },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 120 },
   secHeader: {
     flexDirection: "row",
