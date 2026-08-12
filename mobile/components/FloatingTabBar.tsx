@@ -105,8 +105,6 @@ const styles = StyleSheet.create({
   },
   iconActive: {
     backgroundColor: colors.lime,
-    // Eleva acima da barra ("gravitating").
-    transform: [{ translateY: -16 }],
     shadowColor: colors.lime,
     shadowOpacity: 0.5,
     shadowRadius: 16,
