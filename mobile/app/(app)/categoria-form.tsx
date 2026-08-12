@@ -11,7 +11,7 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "@/lib/api";
-import { CategoryGlyph } from "@/components/CategoryGlyph";
+import { CategoryGlyph, ioniconFor } from "@/components/CategoryGlyph";
 import { Button, Field } from "@/components/ui";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
@@ -45,7 +45,9 @@ export default function CategoriaForm() {
   const isEdit = !!params.id;
 
   const [name, setName] = useState(params.name ?? "");
-  const [icon, setIcon] = useState(params.icon || ICONS[0]);
+  const [icon, setIcon] = useState<string>(
+    ioniconFor(params.icon) || ICONS[0],
+  );
   const [color, setColor] = useState(params.color || COLORS[0]);
   const [budget, setBudget] = useState(
     params.budget && Number(params.budget) > 0
