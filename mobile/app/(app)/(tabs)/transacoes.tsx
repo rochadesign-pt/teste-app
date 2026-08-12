@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import {
+  FlatList,
   Pressable,
-  ScrollView,
   SectionList,
   StyleSheet,
   Text,
@@ -111,35 +111,36 @@ export default function Transacoes() {
 
       {/* Filtro por categoria */}
       {categories.length > 0 && (
-        <ScrollView
+        <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filters}
           contentContainerStyle={styles.filtersRow}
-        >
-          {[{ _id: "__all", name: "Todas", icon: "", color: "" } as Category, ...categories].map(
-            (item) => {
-              const isAll = item._id === "__all";
-              const active = isAll ? catFilter === null : catFilter === item._id;
-              const color = item.color || colors.primary;
-              return (
-                <Pressable
-                  key={item._id}
-                  onPress={() => setCatFilter(isAll ? null : item._id)}
-                  style={[
-                    styles.filterChip,
-                    active && { backgroundColor: tint(color, 0.16), borderColor: color },
-                  ]}
+          data={[{ _id: "__all", name: "Todas", icon: "", color: "" } as Category, ...categories]}
+          keyExtractor={(c) => c._id}
+          renderItem={({ item }) => {
+            const isAll = item._id === "__all";
+            const active = isAll ? catFilter === null : catFilter === item._id;
+            const color = item.color || colors.primary;
+            return (
+              <Pressable
+                onPress={() => setCatFilter(isAll ? null : item._id)}
+                style={[
+                  styles.filterChip,
+                  active && { backgroundColor: tint(color, 0.16), borderColor: color },
+                ]}
+              >
+                <Text
+                  style={[styles.filterText, active && { color }]}
+                  numberOfLines={1}
                 >
-                  <Text style={[styles.filterText, active && { color }]}>
-                    {item.icon ? item.icon + " " : ""}
-                    {item.name}
-                  </Text>
-                </Pressable>
-              );
-            },
-          )}
-        </ScrollView>
+                  {item.icon ? item.icon + " " : ""}
+                  {item.name}
+                </Text>
+              </Pressable>
+            );
+          }}
+        />
       )}
 
       <SectionList
@@ -249,23 +250,27 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     height: "100%",
   },
-  filters: { marginTop: spacing.md, height: 38, flexGrow: 0 },
+  filters: { marginTop: spacing.md, flexGrow: 0 },
   filtersRow: {
-    flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: spacing.lg,
     gap: spacing.sm,
   },
   filterChip: {
-    height: 36,
-    justifyContent: "center",
+    paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 999,
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
+    justifyContent: "center",
   },
-  filterText: { color: colors.text, fontSize: 14, fontFamily: fonts.sans },
+  filterText: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 18,
+    fontFamily: fonts.sans,
+  },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 120 },
   secHeader: {
     flexDirection: "row",
