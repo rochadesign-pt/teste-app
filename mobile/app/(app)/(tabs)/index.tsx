@@ -18,6 +18,7 @@ import { api, type Expense, type Goal, type Subscription } from "@/lib/api";
 import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
 import { GoalCard } from "@/components/GoalCard";
 import { GlassCard } from "@/components/GlassCard";
+import { GradientStatCard } from "@/components/GradientStatCard";
 import { Tappable } from "@/components/Tappable";
 import { Aura } from "@/components/Aura";
 import { Ring, Sparkline } from "@/components/charts";
@@ -411,7 +412,15 @@ export default function ExpensesScreen() {
             {/* Grid: Para onde vai o teu dinheiro */}
             <Text style={styles.gridTitle}>Para onde vai o teu dinheiro</Text>
             <View style={styles.grid}>
-              <GlassCard style={styles.gridCard} contentStyle={styles.gridInner}>
+              <GradientStatCard
+                color={
+                  totalBudget > 0 && budgetLeft < 0
+                    ? colors.danger
+                    : colors.accents.green
+                }
+                style={styles.gridCard}
+                contentStyle={styles.gridInner}
+              >
                 <Text style={styles.gridLabel}>Orçamento</Text>
                 {totalBudget > 0 ? (
                   <>
@@ -445,27 +454,39 @@ export default function ExpensesScreen() {
                     <Text style={styles.gridSub}>Sem orçamento</Text>
                   </>
                 )}
-              </GlassCard>
+              </GradientStatCard>
 
-              <GlassCard style={styles.gridCard} contentStyle={styles.gridInner}>
+              <GradientStatCard
+                color={colors.accents.blue}
+                style={styles.gridCard}
+                contentStyle={styles.gridInner}
+              >
                 <Text style={styles.gridLabel}>Média / {pd.avgUnit}</Text>
                 <Text style={styles.gridValue}>{formatMoney(pd.avg)}</Text>
                 <Text style={styles.gridSub}>neste período</Text>
-              </GlassCard>
+              </GradientStatCard>
 
-              <GlassCard style={styles.gridCard} contentStyle={styles.gridInner}>
+              <GradientStatCard
+                color={colors.accents.purple}
+                style={styles.gridCard}
+                contentStyle={styles.gridInner}
+              >
                 <Text style={styles.gridLabel}>Recorrências</Text>
                 <Text style={styles.gridValue}>{formatMoney(subsMonthly)}</Text>
                 <Text style={styles.gridSub}>por mês</Text>
-              </GlassCard>
+              </GradientStatCard>
 
-              <GlassCard style={styles.gridCard} contentStyle={styles.gridInner}>
+              <GradientStatCard
+                color={colors.accents.orange}
+                style={styles.gridCard}
+                contentStyle={styles.gridInner}
+              >
                 <Text style={styles.gridLabel}>Poupança</Text>
                 <Text style={styles.gridValue}>{formatMoney(totalSaved)}</Text>
                 <Text style={styles.gridSub}>
                   {goals.length} {goals.length === 1 ? "objetivo" : "objetivos"}
                 </Text>
-              </GlassCard>
+              </GradientStatCard>
             </View>
 
             {/* Análise do mês */}
@@ -786,7 +807,11 @@ const styles = StyleSheet.create({
   },
   gridCard: { flexGrow: 1, flexBasis: "47%" },
   gridInner: { padding: spacing.md, gap: 4, minHeight: 92 },
-  gridLabel: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
+  gridLabel: {
+    color: "rgba(235,235,245,0.72)",
+    fontSize: 13,
+    fontFamily: fonts.sans,
+  },
   gridValue: {
     color: colors.text,
     fontSize: 22,
@@ -794,7 +819,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     letterSpacing: -0.5,
   },
-  gridSub: { color: colors.textMuted, fontSize: 12.5, fontFamily: fonts.sans },
+  gridSub: {
+    color: "rgba(235,235,245,0.55)",
+    fontSize: 12.5,
+    fontFamily: fonts.sans,
+  },
   gridRingRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   analise: {
     marginHorizontal: spacing.lg,
