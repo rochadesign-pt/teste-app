@@ -28,6 +28,14 @@ export default function AppLayout() {
         name="sub-form"
         options={{ title: "Recorrência", presentation: "modal" }}
       />
+      <Stack.Screen
+        name="investimento-form"
+        options={{ title: "Investimento", presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="rendimento"
+        options={{ title: "Rendimento", presentation: "modal" }}
+      />
     </Stack>
   );
 }

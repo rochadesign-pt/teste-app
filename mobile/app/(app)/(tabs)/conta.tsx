@@ -1,7 +1,11 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
+import { formatMoney } from "@/lib/format";
 import { Button } from "@/components/ui";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
@@ -9,26 +13,43 @@ function Row({
   icon,
   label,
   value,
+  onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value?: string;
+  onPress?: () => void;
 }) {
-  return (
+  const body = (
     <View style={styles.row}>
       <View style={styles.rowIcon}>
         <Ionicons name={icon} size={18} color={colors.textMuted} />
       </View>
       <Text style={styles.rowLabel}>{label}</Text>
       {value ? <Text style={styles.rowValue}>{value}</Text> : null}
+      {onPress ? (
+        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+      ) : null}
     </View>
   );
+  return onPress ? <Pressable onPress={onPress}>{body}</Pressable> : body;
 }
 
 export default function Conta() {
   const { session, signOut } = useAuth();
+  const router = useRouter();
   const email = session?.user?.email ?? "—";
   const initial = email.charAt(0).toUpperCase();
+  const [income, setIncome] = useState<number | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      api
+        .getProfile()
+        .then((p) => setIncome(p.monthlyIncome || 0))
+        .catch(() => setIncome(0));
+    }, []),
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -44,6 +65,23 @@ export default function Conta() {
             <Text style={styles.email}>{email}</Text>
             <Text style={styles.sub}>Sessão ativa</Text>
           </View>
+        </View>
+
+        {/* Finanças */}
+        <Text style={styles.groupTitle}>Finanças</Text>
+        <View style={styles.group}>
+          <Row
+            icon="wallet"
+            label="Rendimento mensal"
+            value={
+              income === null
+                ? "…"
+                : income > 0
+                  ? formatMoney(income)
+                  : "Definir"
+            }
+            onPress={() => router.push("/(app)/rendimento")}
+          />
         </View>
 
         {/* Segurança */}

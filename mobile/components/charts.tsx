@@ -104,23 +104,28 @@ export function Sparkline({
   const area = `${line} L ${x(values.length - 1).toFixed(1)} ${height} L ${insetL} ${height} Z`;
   const lastX = x(values.length - 1);
   const lastY = y(values[values.length - 1]);
+  // IDs únicos por cor — senão os gradientes SVG colidem entre instâncias
+  // na mesma página (todos os gráficos ficariam com a mesma cor).
+  const uid = `${from}${to}`.replace(/[^a-zA-Z0-9]/g, "");
+  const fillId = `sf${uid}`;
+  const lineId = `sl${uid}`;
   return (
     <View style={{ width, height }}>
       <Svg width={width} height={height}>
         <Defs>
-          <LinearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+          <LinearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={to} stopOpacity={0.28} />
             <Stop offset="1" stopColor={to} stopOpacity={0} />
           </LinearGradient>
-          <LinearGradient id="sparkLine" x1="0" y1="0" x2="1" y2="0">
+          <LinearGradient id={lineId} x1="0" y1="0" x2="1" y2="0">
             <Stop offset="0" stopColor={from} />
             <Stop offset="1" stopColor={to} />
           </LinearGradient>
         </Defs>
-        <Path d={area} fill="url(#sparkFill)" />
+        <Path d={area} fill={`url(#${fillId})`} />
         <Path
           d={line}
-          stroke="url(#sparkLine)"
+          stroke={`url(#${lineId})`}
           strokeWidth={2.4}
           strokeLinecap="round"
           strokeLinejoin="round"

@@ -58,6 +58,7 @@ export default function ExpensesScreen() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [subs, setSubs] = useState<Subscription[]>([]);
+  const [income, setIncome] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pullDist, setPullDist] = useState(0);
@@ -65,14 +66,16 @@ export default function ExpensesScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [exp, gls, sbs] = await Promise.all([
+      const [exp, gls, sbs, prof] = await Promise.all([
         api.listExpenses(),
         api.listGoals().catch(() => [] as Goal[]),
         api.listSubscriptions().catch(() => [] as Subscription[]),
+        api.getProfile().catch(() => ({ monthlyIncome: 0 })),
       ]);
       setExpenses(exp);
       setGoals(gls);
       setSubs(sbs);
+      setIncome(prof.monthlyIncome || 0);
     } catch (err) {
       Alert.alert("Erro ao carregar", (err as Error).message);
     } finally {
@@ -245,16 +248,34 @@ export default function ExpensesScreen() {
     const biggestCat = cards[0];
     const biggestSub = [...subs].sort((a, b) => b.amount - a.amount)[0];
 
+    // Com salário definido, a análise é fidedigna: saldo e taxa de poupança.
+    const hasIncome = income > 0;
+    const balance = income - monthTotal;
+    const savingsRate = hasIncome ? balance / income : 0;
+    const projectedBalance = income - projection;
+
     let headline: string;
-    if (prevTotal > 0 && deltaPrev < -0.02 * prevTotal) {
+    if (hasIncome && projectedBalance >= 0) {
+      headline = `Ao ritmo atual, sobram-te ${formatMoney(projectedBalance)} este mês (poupas ${Math.round(savingsRate * 100)}%).`;
+    } else if (hasIncome && projectedBalance < 0) {
+      headline = `Atenção: ao ritmo atual gastas ${formatMoney(Math.abs(projectedBalance))} acima do que recebes.`;
+    } else if (prevTotal > 0 && deltaPrev < -0.02 * prevTotal) {
       headline = `Boa! Gastaste ${formatMoney(Math.abs(deltaPrev))} menos que no mês passado.`;
     } else if (prevTotal > 0 && deltaPrev > 0.02 * prevTotal) {
       headline = `Estás ${formatMoney(deltaPrev)} acima do mês passado — atenção ao ritmo.`;
     } else {
       headline = `Ao ritmo atual, o mês fecha em cerca de ${formatMoney(projection)}.`;
     }
-    return { projection, biggestCat, biggestSub, headline };
-  }, [monthTotal, prevTotal, cards, subs, now]);
+    return {
+      projection,
+      biggestCat,
+      biggestSub,
+      headline,
+      hasIncome,
+      balance,
+      savingsRate,
+    };
+  }, [monthTotal, prevTotal, cards, subs, now, income]);
 
   const deleteSub = async (id: string) => {
     try {
@@ -458,6 +479,19 @@ export default function ExpensesScreen() {
                 <Text style={styles.analiseLabel}>✦ Análise do mês</Text>
                 <Text style={styles.analiseHeadline}>{insights.headline}</Text>
                 <View style={styles.analiseRows}>
+                  {insights.hasIncome ? (
+                    <Text style={styles.analiseRow}>
+                      💰 Saldo do mês: {formatMoney(insights.balance)} de{" "}
+                      {formatMoney(income)} · poupas{" "}
+                      {Math.round(insights.savingsRate * 100)}%
+                    </Text>
+                  ) : (
+                    <Pressable onPress={() => router.push("/(app)/rendimento")}>
+                      <Text style={[styles.analiseRow, styles.analiseCta]}>
+                        💰 Define o teu salário para veres quanto poupas →
+                      </Text>
+                    </Pressable>
+                  )}
                   {insights.biggestCat && (
                     <Text style={styles.analiseRow}>
                       📊 Onde mais gastas: {insights.biggestCat.name} ·{" "}
@@ -808,6 +842,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: fonts.sans,
     lineHeight: 20,
+  },
+  analiseCta: {
+    color: "#fff",
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
   headerAction: {
     color: colors.textMuted,

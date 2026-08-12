@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -7,10 +8,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect, useRouter } from "expo-router";
 import { LinearGradient as ExpoGradient } from "expo-linear-gradient";
 import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { GlassCard } from "@/components/GlassCard";
+import { InvestmentCard } from "@/components/InvestmentCard";
 import { Aura } from "@/components/Aura";
+import { api, type Investment } from "@/lib/api";
+import { projectInvestment } from "@/lib/invest";
 import { formatMoney } from "@/lib/format";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
@@ -111,6 +116,31 @@ function yearsToFire(target: number, current: number, monthly: number, rate: num
 }
 
 export default function Investir() {
+  const router = useRouter();
+
+  // Investimentos reais (com depósitos recorrentes)
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      api
+        .listInvestments()
+        .then(setInvestments)
+        .catch(() => setInvestments([]));
+    }, []),
+  );
+  const portfolio = useMemo(() => {
+    let value = 0;
+    let contributed = 0;
+    let monthly = 0;
+    for (const inv of investments) {
+      const p = projectInvestment(inv);
+      value += p.value;
+      contributed += p.contributed;
+      monthly += inv.monthlyDeposit || 0;
+    }
+    return { value, contributed, growth: value - contributed, monthly };
+  }, [investments]);
+
   // Simulador
   const [initial, setInitial] = useState("1000");
   const [monthly, setMonthly] = useState("150");
@@ -150,6 +180,73 @@ export default function Investir() {
       <Aura height={360} a="rgba(53,214,197,0.20)" b="rgba(99,102,241,0.20)" wash="rgba(53,214,197,0.07)" />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.h1}>Investir</Text>
+
+        {/* Os meus investimentos */}
+        <View style={styles.secHead}>
+          <Text style={styles.secTitle}>Os meus investimentos</Text>
+          <Pressable onPress={() => router.push("/(app)/investimento-form")}>
+            <Text style={styles.secLink}>+ Novo</Text>
+          </Pressable>
+        </View>
+
+        {investments.length > 0 ? (
+          <>
+            <GlassCard
+              contentStyle={styles.portfolioInner}
+              fill={["#15201F", "#111417"]}
+              sheen={0.2}
+            >
+              <Text style={styles.portfolioLabel}>Valor total estimado</Text>
+              <Text style={styles.portfolioValue}>{formatMoney(portfolio.value)}</Text>
+              <View style={styles.portfolioRow}>
+                <Text style={styles.portfolioSub}>
+                  <Text style={{ color: colors.success }}>
+                    {portfolio.growth >= 0 ? "+" : ""}
+                    {formatMoney(portfolio.growth)}
+                  </Text>{" "}
+                  em ganhos
+                </Text>
+                {portfolio.monthly > 0 && (
+                  <Text style={styles.portfolioSub}>
+                    {formatMoney(portfolio.monthly)}/mês a entrar
+                  </Text>
+                )}
+              </View>
+            </GlassCard>
+            <View style={{ gap: spacing.md }}>
+              {investments.map((inv) => (
+                <InvestmentCard
+                  key={inv._id}
+                  inv={inv}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(app)/investimento-form",
+                      params: {
+                        id: inv._id,
+                        name: inv.name,
+                        initialValue: String(inv.initialValue),
+                        monthlyDeposit: String(inv.monthlyDeposit),
+                        annualRate: String(inv.annualRate),
+                        startDate: inv.startDate ?? "",
+                        icon: inv.icon ?? "",
+                        color: inv.color ?? "",
+                      },
+                    })
+                  }
+                />
+              ))}
+            </View>
+          </>
+        ) : (
+          <Pressable
+            style={styles.empty}
+            onPress={() => router.push("/(app)/investimento-form")}
+          >
+            <Text style={styles.emptyText}>
+              + Adicionar um investimento com depósitos recorrentes
+            </Text>
+          </Pressable>
+        )}
 
         {/* Simulador */}
         <GlassCard contentStyle={styles.cardInner}>
@@ -259,6 +356,55 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   cardInner: { padding: spacing.lg, gap: spacing.sm },
+  secHead: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: spacing.xs,
+  },
+  secTitle: {
+    color: colors.text,
+    fontSize: 19,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+  },
+  secLink: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: "500",
+    fontFamily: fonts.sans,
+  },
+  portfolioInner: { padding: spacing.lg, gap: 2 },
+  portfolioLabel: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
+  portfolioValue: {
+    color: colors.text,
+    fontSize: 34,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+    letterSpacing: -1,
+  },
+  portfolioRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  portfolioSub: { color: colors.textMuted, fontSize: 13.5, fontFamily: fonts.sans },
+  empty: {
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: "dashed",
+    alignItems: "center",
+  },
+  emptyText: {
+    color: colors.textMuted,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    textAlign: "center",
+  },
   cardTitle: { color: colors.text, fontSize: 18, fontWeight: "600", fontFamily: fonts.sans },
   cardSub: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
   grid: {

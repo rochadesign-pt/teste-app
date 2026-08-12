@@ -98,6 +98,31 @@ export type Subscription = {
   color?: string;
 };
 
+export type Investment = {
+  _id: string;
+  name: string;
+  initialValue: number;
+  monthlyDeposit: number;
+  annualRate: number;
+  startDate?: string;
+  icon?: string;
+  color?: string;
+};
+
+export type InvestmentInput = {
+  name: string;
+  initialValue: number;
+  monthlyDeposit: number;
+  annualRate: number;
+  startDate?: string;
+  icon?: string;
+  color?: string;
+};
+
+export type Profile = {
+  monthlyIncome: number;
+};
+
 export const api = {
   listSubscriptions: () =>
     apiFetch<{ subscriptions: Subscription[] }>("/subscriptions").then(
@@ -120,6 +145,38 @@ export const api = {
       `/subscription?id=${encodeURIComponent(id)}`,
       { method: "DELETE" },
     ),
+
+  listInvestments: () =>
+    apiFetch<{ investments: Investment[] }>("/investments").then(
+      (r) => r.investments,
+    ),
+
+  createInvestment: (input: InvestmentInput) =>
+    apiFetch<{ investment: Investment }>("/investments", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }).then((r) => r.investment),
+
+  updateInvestment: (id: string, input: Partial<InvestmentInput>) =>
+    apiFetch<{ investment: Investment }>(
+      `/investment?id=${encodeURIComponent(id)}`,
+      { method: "PATCH", body: JSON.stringify(input) },
+    ).then((r) => r.investment),
+
+  deleteInvestment: (id: string) =>
+    apiFetch<{ success: boolean }>(
+      `/investment?id=${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ),
+
+  getProfile: () =>
+    apiFetch<{ profile: Profile }>("/profile").then((r) => r.profile),
+
+  updateProfile: (input: Profile) =>
+    apiFetch<{ profile: Profile }>("/profile", {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }).then((r) => r.profile),
 
   listGoals: () =>
     apiFetch<{ goals: Goal[] }>("/goals").then((r) => r.goals),
