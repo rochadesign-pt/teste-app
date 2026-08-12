@@ -221,17 +221,31 @@ export const api = {
     return { success: true };
   },
 
-  // Rendimento — local-first para não bloquear quando a função não existe.
+  // Rendimento — local-first e robusto: um servidor vazio nunca apaga um
+  // valor local. Se o local tem valor e o servidor não, reenvia (auto-cura).
   getProfile: async () => {
+    const empty: Profile = { monthlyIncome: 0, mealAllowance: 0 };
+    const local = await localGet<Profile>("profile", empty);
+    const has = (p: Profile) =>
+      (p?.monthlyIncome || 0) > 0 || (p?.mealAllowance || 0) > 0;
     try {
       const r = await apiFetch<{ profile: Profile }>("/profile");
-      await localSet("profile", r.profile);
-      return r.profile;
+      const srv = r.profile ?? empty;
+      if (has(srv)) {
+        await localSet("profile", srv);
+        return srv;
+      }
+      // Servidor vazio: mantém o valor local e tenta reenviá-lo.
+      if (has(local)) {
+        apiFetch("/profile", {
+          method: "PUT",
+          body: JSON.stringify(local),
+        }).catch(() => {});
+        return local;
+      }
+      return empty;
     } catch {
-      return localGet<Profile>("profile", {
-        monthlyIncome: 0,
-        mealAllowance: 0,
-      });
+      return local;
     }
   },
 
