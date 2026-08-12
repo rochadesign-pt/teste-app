@@ -14,6 +14,7 @@ import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { GlassCard } from "@/components/GlassCard";
 import { InvestmentCard } from "@/components/InvestmentCard";
 import { Slider } from "@/components/Slider";
+import { ProgressBar } from "@/components/ProgressBar";
 import { Aura } from "@/components/Aura";
 import { api, type Investment } from "@/lib/api";
 import { projectInvestment } from "@/lib/invest";
@@ -153,17 +154,17 @@ export default function Investir() {
     [initial, monthly, rate, years],
   );
 
-  // FIRE
-  const [spend, setSpend] = useState("1500");
-  const [withdraw, setWithdraw] = useState("4");
+  // FIRE (controlos manuais)
+  const [spend, setSpend] = useState(1500);
+  const [withdraw, setWithdraw] = useState(4);
   const [current, setCurrent] = useState("15000");
-  const [fMonthly, setFMonthly] = useState("400");
-  const [fRate, setFRate] = useState("7");
+  const [fMonthly, setFMonthly] = useState(400);
+  const [fRate, setFRate] = useState(7);
 
   const fire = useMemo(() => {
-    const target = (num(spend) * 12) / (Math.max(0.1, num(withdraw)) / 100);
-    const y = yearsToFire(target, num(current), num(fMonthly), num(fRate));
-    return { target, income: target * (num(withdraw) / 100), years: y };
+    const target = (spend * 12) / (Math.max(0.1, withdraw) / 100);
+    const y = yearsToFire(target, num(current), fMonthly, fRate);
+    return { target, income: target * (withdraw / 100), years: y };
   }, [spend, withdraw, current, fMonthly, fRate]);
 
   const fireYears =
@@ -350,14 +351,105 @@ export default function Investir() {
         {/* FIRE */}
         <GlassCard contentStyle={styles.cardInner}>
           <Text style={styles.cardTitle}>Liberdade financeira 🔥</Text>
-          <Text style={styles.cardSub}>Quanto precisas para viver dos juros.</Text>
+          <Text style={styles.cardSub}>
+            Arrasta para veres quanto precisas para viver dos juros.
+          </Text>
+
           <View style={styles.grid}>
-            <NumInput label="Gasto mensal desejado" value={spend} onChangeText={setSpend} unit="€" />
-            <NumInput label="Taxa de levantamento" value={withdraw} onChangeText={setWithdraw} unit="%" />
             <NumInput label="Património atual" value={current} onChangeText={setCurrent} unit="€" />
-            <NumInput label="Reforço mensal" value={fMonthly} onChangeText={setFMonthly} unit="€" />
           </View>
-          <NumInput label="Retorno anual esperado" value={fRate} onChangeText={setFRate} unit="%" />
+
+          <View style={styles.control}>
+            <View style={styles.controlHead}>
+              <Text style={styles.fieldLabel}>Gasto mensal desejado</Text>
+              <Text style={styles.controlValue}>
+                {formatMoney(spend)}
+                <Text style={styles.controlUnit}> /mês</Text>
+              </Text>
+            </View>
+            <Slider
+              value={spend}
+              min={500}
+              max={5000}
+              step={50}
+              onChange={setSpend}
+              from="#FFCC80"
+              to={colors.accents.orange}
+            />
+            <View style={styles.scaleRow}>
+              <Text style={styles.scaleTxt}>500 €</Text>
+              <Text style={styles.scaleTxt}>5000 €</Text>
+            </View>
+          </View>
+
+          <View style={styles.control}>
+            <View style={styles.controlHead}>
+              <Text style={styles.fieldLabel}>Reforço mensal</Text>
+              <Text style={styles.controlValue}>
+                {formatMoney(fMonthly)}
+                <Text style={styles.controlUnit}> /mês</Text>
+              </Text>
+            </View>
+            <Slider
+              value={fMonthly}
+              min={0}
+              max={2000}
+              step={50}
+              onChange={setFMonthly}
+              from="#FFCC80"
+              to={colors.accents.orange}
+            />
+            <View style={styles.scaleRow}>
+              <Text style={styles.scaleTxt}>0 €</Text>
+              <Text style={styles.scaleTxt}>2000 €</Text>
+            </View>
+          </View>
+
+          <View style={styles.control}>
+            <View style={styles.controlHead}>
+              <Text style={styles.fieldLabel}>Taxa de levantamento</Text>
+              <Text style={styles.controlValue}>
+                {withdraw.toLocaleString("pt-PT")}
+                <Text style={styles.controlUnit}> %/ano</Text>
+              </Text>
+            </View>
+            <Slider
+              value={withdraw}
+              min={2}
+              max={6}
+              step={0.25}
+              onChange={setWithdraw}
+              from="#FFCC80"
+              to={colors.accents.orange}
+            />
+            <View style={styles.scaleRow}>
+              <Text style={styles.scaleTxt}>2%</Text>
+              <Text style={styles.scaleTxt}>6%</Text>
+            </View>
+          </View>
+
+          <View style={styles.control}>
+            <View style={styles.controlHead}>
+              <Text style={styles.fieldLabel}>Retorno anual esperado</Text>
+              <Text style={styles.controlValue}>
+                {fRate.toLocaleString("pt-PT")}
+                <Text style={styles.controlUnit}> %/ano</Text>
+              </Text>
+            </View>
+            <Slider
+              value={fRate}
+              min={1}
+              max={12}
+              step={0.5}
+              onChange={setFRate}
+              from="#FFCC80"
+              to={colors.accents.orange}
+            />
+            <View style={styles.scaleRow}>
+              <Text style={styles.scaleTxt}>1%</Text>
+              <Text style={styles.scaleTxt}>12%</Text>
+            </View>
+          </View>
 
           <ExpoGradient
             colors={["rgba(255,149,0,0.14)", "rgba(255,55,95,0.03)"]}
@@ -370,12 +462,11 @@ export default function Investir() {
             <Text style={styles.cardSub}>
               para gerar {formatMoney(fire.income)} por ano ({formatMoney(fire.income / 12)}/mês)
             </Text>
-            <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${fireProgress * 100}%` },
-                ]}
+            <View style={{ marginTop: spacing.sm }}>
+              <ProgressBar
+                progress={fireProgress}
+                from="#FFCC80"
+                to={colors.accents.orange}
               />
             </View>
             <View style={styles.split}>
@@ -563,17 +654,5 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontFamily: fonts.sans,
     marginTop: 2,
-  },
-  progressTrack: {
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: colors.border,
-    overflow: "hidden",
-    marginTop: spacing.sm,
-  },
-  progressFill: {
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: colors.accents.orange,
   },
 });

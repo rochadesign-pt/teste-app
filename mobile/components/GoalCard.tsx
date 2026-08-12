@@ -2,7 +2,17 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import type { Goal } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
+import { ProgressBar } from "./ProgressBar";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
+
+function lighten(hex: string, a = 0.55) {
+  const n = parseInt((hex || "#6366F1").replace("#", ""), 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  const mix = (c: number) => Math.round(c + (255 - c) * a);
+  return `#${((1 << 24) + (mix(r) << 16) + (mix(g) << 8) + mix(b)).toString(16).slice(1)}`;
+}
 
 function tint(hex: string, a: number) {
   const n = parseInt((hex || "#6366F1").replace("#", ""), 16);
@@ -37,13 +47,8 @@ export function GoalCard({
         </View>
         <Text style={styles.saved}>{formatMoney(goal.saved)}</Text>
         <Text style={styles.target}>de {formatMoney(goal.target)}</Text>
-        <View style={styles.bar}>
-          <View
-            style={[
-              styles.fill,
-              { width: `${pct * 100}%`, backgroundColor: color },
-            ]}
-          />
+        <View style={styles.barWrap}>
+          <ProgressBar progress={pct} from={lighten(color)} to={color} height={7} />
         </View>
         <View style={styles.foot}>
           <Text style={styles.footTxt}>{Math.round(pct * 100)}%</Text>
@@ -88,14 +93,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   target: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
-  bar: {
-    height: 7,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    overflow: "hidden",
-    marginTop: spacing.md,
-  },
-  fill: { height: 7, borderRadius: 999 },
+  barWrap: { marginTop: spacing.md },
   foot: {
     flexDirection: "row",
     justifyContent: "space-between",
