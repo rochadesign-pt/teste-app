@@ -9,13 +9,19 @@ import {
   View,
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { api } from "@/lib/api";
+import { CategoryGlyph } from "@/components/CategoryGlyph";
 import { Button, Field } from "@/components/ui";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
-const ICONS = [
-  "🏠", "🍴", "🚗", "🛒", "💡", "🎬", "🏥", "✈️", "👕", "📱",
-  "🎓", "🐾", "💪", "☕️", "🎁", "💳", "⛽️", "📚", "🍺", "💊",
+const ICONS: (keyof typeof Ionicons.glyphMap)[] = [
+  "home-outline", "cart-outline", "restaurant-outline", "car-outline",
+  "bus-outline", "airplane-outline", "flash-outline", "water-outline",
+  "wifi-outline", "phone-portrait-outline", "shirt-outline", "fitness-outline",
+  "cafe-outline", "fast-food-outline", "gift-outline", "medkit-outline",
+  "school-outline", "paw-outline", "game-controller-outline", "card-outline",
+  "umbrella-outline", "book-outline", "musical-notes-outline", "bag-handle-outline",
 ];
 const COLORS = [
   "#0A84FF", "#FF9500", "#35D6C5", "#FF375F", "#8B5CF6",
@@ -95,7 +101,7 @@ export default function CategoriaForm() {
         {/* Pré-visualização */}
         <View style={styles.preview}>
           <View style={[styles.previewIcon, { backgroundColor: color }]}>
-            <Text style={{ fontSize: 26 }}>{icon}</Text>
+            <CategoryGlyph icon={icon} size={30} color="#0A0A0B" />
           </View>
           <Text style={styles.previewName}>{name.trim() || "Categoria"}</Text>
         </View>
@@ -127,7 +133,11 @@ export default function CategoriaForm() {
                   active && { backgroundColor: tint(color, 0.18), borderColor: color },
                 ]}
               >
-                <Text style={{ fontSize: 20 }}>{ic}</Text>
+                <Ionicons
+                  name={ic}
+                  size={22}
+                  color={active ? color : colors.text}
+                />
               </Pressable>
             );
           })}

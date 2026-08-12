@@ -11,6 +11,7 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { api, type Category } from "@/lib/api";
 import { Button, Field } from "@/components/ui";
+import { CategoryGlyph } from "@/components/CategoryGlyph";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
 function tint(hex: string, a: number) {
@@ -214,7 +215,7 @@ function Chip({
         active && { backgroundColor: tint(color, 0.16), borderColor: color },
       ]}
     >
-      <Text style={{ fontSize: 15 }}>{icon}</Text>
+      <CategoryGlyph icon={icon} size={17} color={active ? color : colors.text} />
       <Text style={styles.chipText}>{label}</Text>
     </Pressable>
   );

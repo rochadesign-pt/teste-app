@@ -12,6 +12,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api, type Category, type Expense } from "@/lib/api";
 import { GlassCard } from "@/components/GlassCard";
+import { CategoryGlyph } from "@/components/CategoryGlyph";
 import { Tappable } from "@/components/Tappable";
 import { formatMoney } from "@/lib/format";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
@@ -126,8 +127,14 @@ export default function Transacoes() {
                     active && { backgroundColor: tint(color, 0.16), borderColor: color },
                   ]}
                 >
+                  {!isAll && (
+                    <CategoryGlyph
+                      icon={item.icon}
+                      size={16}
+                      color={active ? color : colors.textMuted}
+                    />
+                  )}
                   <Text style={[styles.filterText, active && { color }]} numberOfLines={1}>
-                    {item.icon ? item.icon + " " : ""}
                     {item.name}
                   </Text>
                 </Pressable>
@@ -188,7 +195,11 @@ export default function Transacoes() {
                   { backgroundColor: tint(item.category?.color ?? "#6366F1", 0.16) },
                 ]}
               >
-                <Text style={{ fontSize: 20 }}>{item.category?.icon ?? "💸"}</Text>
+                <CategoryGlyph
+                  icon={item.category?.icon}
+                  size={22}
+                  color={item.category?.color ?? colors.primary}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{item.title}</Text>
@@ -254,6 +265,7 @@ const styles = StyleSheet.create({
   filterChip: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 6,
     paddingVertical: 9,
     paddingHorizontal: 14,
     borderRadius: 999,

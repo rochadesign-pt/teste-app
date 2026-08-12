@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, type Expense, type Goal, type Subscription } from "@/lib/api";
 import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
+import { CategoryGlyph } from "@/components/CategoryGlyph";
 import { GoalCard } from "@/components/GoalCard";
 import { GlassCard } from "@/components/GlassCard";
 import { GradientStatCard } from "@/components/GradientStatCard";
@@ -738,7 +739,11 @@ export default function ExpensesScreen() {
                   { backgroundColor: tint(item.category?.color ?? "#6366F1", 0.16) },
                 ]}
               >
-                <Text style={{ fontSize: 20 }}>{item.category?.icon ?? "💸"}</Text>
+                <CategoryGlyph
+                  icon={item.category?.icon}
+                  size={22}
+                  color={item.category?.color ?? colors.primary}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{item.title}</Text>

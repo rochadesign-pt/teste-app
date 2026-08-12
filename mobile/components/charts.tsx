@@ -15,12 +15,14 @@ export function Ring({
   progress,
   color,
   glow = true,
+  track = colors.surfaceAlt,
 }: {
   size?: number;
   stroke?: number;
   progress: number;
   color: string;
   glow?: boolean;
+  track?: string;
 }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -33,7 +35,7 @@ export function Ring({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={colors.surfaceAlt}
+          stroke={track}
           strokeWidth={stroke}
           fill="none"
         />

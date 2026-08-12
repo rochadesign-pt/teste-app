@@ -8,6 +8,7 @@ import {
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { api, type Category, type Expense } from "@/lib/api";
 import { GlassCard } from "@/components/GlassCard";
+import { CategoryGlyph } from "@/components/CategoryGlyph";
 import { Tappable } from "@/components/Tappable";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Button } from "@/components/ui";
@@ -89,7 +90,7 @@ export default function Categorias() {
                 <GlassCard contentStyle={styles.row}>
                   <View style={styles.head}>
                     <View style={[styles.icon, { backgroundColor: color }]}>
-                      <Text style={{ fontSize: 18 }}>{c.icon ?? "💸"}</Text>
+                      <CategoryGlyph icon={c.icon} size={20} color="#0A0A0B" />
                     </View>
                     <Text style={styles.name} numberOfLines={1}>
                       {c.name}
