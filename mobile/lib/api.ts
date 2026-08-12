@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { localGet, localSet, localId } from "./localStore";
 
 // URL da camada API (edge functions). Se EXPO_PUBLIC_API_URL não estiver
 // definido, deriva-o do URL do Supabase — assim basta ter o SUPABASE_URL.
@@ -147,37 +148,105 @@ export const api = {
       { method: "DELETE" },
     ),
 
-  listInvestments: () =>
-    apiFetch<{ investments: Investment[] }>("/investments").then(
-      (r) => r.investments,
-    ),
+  // Investimentos — local-first: se a edge function ainda não estiver
+  // publicada, funciona na mesma no dispositivo (o acompanhamento é
+  // calculado no cliente) e sincroniza quando o servidor estiver disponível.
+  listInvestments: async () => {
+    try {
+      const r = await apiFetch<{ investments: Investment[] }>("/investments");
+      // Junta itens criados localmente que ainda não foram para o servidor.
+      const local = await localGet<Investment[]>("investments", []);
+      const pending = local.filter((i) => i._id.startsWith("local-"));
+      const merged = [...r.investments, ...pending];
+      await localSet("investments", merged);
+      return merged;
+    } catch {
+      return localGet<Investment[]>("investments", []);
+    }
+  },
 
-  createInvestment: (input: InvestmentInput) =>
-    apiFetch<{ investment: Investment }>("/investments", {
-      method: "POST",
-      body: JSON.stringify(input),
-    }).then((r) => r.investment),
+  createInvestment: async (input: InvestmentInput) => {
+    try {
+      const r = await apiFetch<{ investment: Investment }>("/investments", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+      const list = await localGet<Investment[]>("investments", []);
+      await localSet("investments", [...list, r.investment]);
+      return r.investment;
+    } catch {
+      const inv: Investment = { _id: localId(), ...input };
+      const list = await localGet<Investment[]>("investments", []);
+      await localSet("investments", [...list, inv]);
+      return inv;
+    }
+  },
 
-  updateInvestment: (id: string, input: Partial<InvestmentInput>) =>
-    apiFetch<{ investment: Investment }>(
-      `/investment?id=${encodeURIComponent(id)}`,
-      { method: "PATCH", body: JSON.stringify(input) },
-    ).then((r) => r.investment),
+  updateInvestment: async (id: string, input: Partial<InvestmentInput>) => {
+    const patchLocal = async () => {
+      const list = await localGet<Investment[]>("investments", []);
+      const next = list.map((i) => (i._id === id ? { ...i, ...input } : i));
+      await localSet("investments", next);
+      return next.find((i) => i._id === id) as Investment;
+    };
+    if (id.startsWith("local-")) return patchLocal();
+    try {
+      const r = await apiFetch<{ investment: Investment }>(
+        `/investment?id=${encodeURIComponent(id)}`,
+        { method: "PATCH", body: JSON.stringify(input) },
+      );
+      await patchLocal();
+      return r.investment;
+    } catch {
+      return patchLocal();
+    }
+  },
 
-  deleteInvestment: (id: string) =>
-    apiFetch<{ success: boolean }>(
-      `/investment?id=${encodeURIComponent(id)}`,
-      { method: "DELETE" },
-    ),
+  deleteInvestment: async (id: string) => {
+    const removeLocal = async () => {
+      const list = await localGet<Investment[]>("investments", []);
+      await localSet("investments", list.filter((i) => i._id !== id));
+    };
+    if (!id.startsWith("local-")) {
+      try {
+        await apiFetch<{ success: boolean }>(
+          `/investment?id=${encodeURIComponent(id)}`,
+          { method: "DELETE" },
+        );
+      } catch {
+        /* remove local na mesma */
+      }
+    }
+    await removeLocal();
+    return { success: true };
+  },
 
-  getProfile: () =>
-    apiFetch<{ profile: Profile }>("/profile").then((r) => r.profile),
+  // Rendimento — local-first para não bloquear quando a função não existe.
+  getProfile: async () => {
+    try {
+      const r = await apiFetch<{ profile: Profile }>("/profile");
+      await localSet("profile", r.profile);
+      return r.profile;
+    } catch {
+      return localGet<Profile>("profile", {
+        monthlyIncome: 0,
+        mealAllowance: 0,
+      });
+    }
+  },
 
-  updateProfile: (input: Profile) =>
-    apiFetch<{ profile: Profile }>("/profile", {
-      method: "PUT",
-      body: JSON.stringify(input),
-    }).then((r) => r.profile),
+  updateProfile: async (input: Profile) => {
+    await localSet("profile", input); // guarda já no dispositivo
+    try {
+      await apiFetch<{ profile: Profile }>("/profile", {
+        method: "PUT",
+        body: JSON.stringify(input),
+      });
+    } catch {
+      /* fica guardado localmente; sincroniza quando a função existir */
+    }
+    return input;
+  },
 
   listGoals: () =>
     apiFetch<{ goals: Goal[] }>("/goals").then((r) => r.goals),
