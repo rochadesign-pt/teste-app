@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import {
-  FlatList,
   Pressable,
+  ScrollView,
+  SectionList,
   StyleSheet,
   Text,
   TextInput,
@@ -11,12 +12,33 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api, type Category, type Expense } from "@/lib/api";
+import { GlassCard } from "@/components/GlassCard";
+import { Tappable } from "@/components/Tappable";
 import { formatMoney } from "@/lib/format";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
 function tint(hex: string, a: number) {
   const n = parseInt((hex || "#6366F1").replace("#", ""), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+function isoLocal(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
+function dayLabel(iso: string) {
+  const now = new Date();
+  const today = isoLocal(now);
+  const yst = isoLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+  if (iso === today) return "Hoje";
+  if (iso === yst) return "Ontem";
+  const d = new Date(iso + "T00:00:00");
+  const s = new Intl.DateTimeFormat("pt-PT", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+  }).format(d);
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export default function Transacoes() {
@@ -46,6 +68,21 @@ export default function Transacoes() {
     [filtered],
   );
 
+  // Agrupar por dia (mantém a ordem descendente do `filtered`).
+  const sections = useMemo(() => {
+    const map = new Map<string, Expense[]>();
+    for (const e of filtered) {
+      const arr = map.get(e.date);
+      if (arr) arr.push(e);
+      else map.set(e.date, [e]);
+    }
+    return [...map.entries()].map(([date, data]) => ({
+      title: dayLabel(date),
+      sum: data.reduce((s, e) => s + (e.amount || 0), 0),
+      data,
+    }));
+  }, [filtered]);
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
@@ -74,47 +111,67 @@ export default function Transacoes() {
 
       {/* Filtro por categoria */}
       {categories.length > 0 && (
-        <FlatList
+        <ScrollView
           horizontal
-          data={[{ _id: "__all", name: "Todas", icon: "", color: "" } as Category, ...categories]}
-          keyExtractor={(c) => c._id}
           showsHorizontalScrollIndicator={false}
           style={styles.filters}
           contentContainerStyle={styles.filtersRow}
-          renderItem={({ item }) => {
-            const isAll = item._id === "__all";
-            const active = isAll ? catFilter === null : catFilter === item._id;
-            const color = item.color || colors.primary;
-            return (
-              <Pressable
-                onPress={() => setCatFilter(isAll ? null : item._id)}
-                style={[
-                  styles.filterChip,
-                  active && { backgroundColor: tint(color, 0.16), borderColor: color },
-                ]}
-              >
-                <Text style={styles.filterText}>
-                  {item.icon ? item.icon + " " : ""}
-                  {item.name}
-                </Text>
-              </Pressable>
-            );
-          }}
-        />
+        >
+          {[{ _id: "__all", name: "Todas", icon: "", color: "" } as Category, ...categories].map(
+            (item) => {
+              const isAll = item._id === "__all";
+              const active = isAll ? catFilter === null : catFilter === item._id;
+              const color = item.color || colors.primary;
+              return (
+                <Pressable
+                  key={item._id}
+                  onPress={() => setCatFilter(isAll ? null : item._id)}
+                  style={[
+                    styles.filterChip,
+                    active && { backgroundColor: tint(color, 0.16), borderColor: color },
+                  ]}
+                >
+                  <Text style={[styles.filterText, active && { color }]}>
+                    {item.icon ? item.icon + " " : ""}
+                    {item.name}
+                  </Text>
+                </Pressable>
+              );
+            },
+          )}
+        </ScrollView>
       )}
 
-      <FlatList
-        data={filtered}
+      <SectionList
+        sections={sections}
         keyExtractor={(e) => e._id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        stickySectionHeadersEnabled={false}
         ListEmptyComponent={
-          <Text style={styles.empty}>Nenhuma transação encontrada.</Text>
+          <View style={styles.empty}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="receipt-outline" size={28} color={colors.textMuted} />
+            </View>
+            <Text style={styles.emptyTitle}>Nenhuma transação</Text>
+            <Text style={styles.emptyText}>
+              {query || catFilter
+                ? "Experimenta ajustar a pesquisa ou o filtro."
+                : "Toca no + no Início para registares a primeira."}
+            </Text>
+          </View>
         }
+        renderSectionHeader={({ section }) => (
+          <View style={styles.secHeader}>
+            <Text style={styles.secTitle}>{section.title}</Text>
+            <Text style={styles.secSum}>{formatMoney(section.sum)}</Text>
+          </View>
+        )}
         renderItem={({ item }) => (
-          <Pressable
-            style={styles.row}
+          <Tappable
+            style={styles.rowWrap}
+            scaleTo={0.98}
             onPress={() =>
               router.push({
                 pathname: "/(app)/new",
@@ -129,24 +186,26 @@ export default function Transacoes() {
               })
             }
           >
-            <View
-              style={[
-                styles.badge,
-                { backgroundColor: tint(item.category?.color ?? "#6366F1", 0.16) },
-              ]}
-            >
-              <Text style={{ fontSize: 20 }}>{item.category?.icon ?? "💸"}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>{item.title}</Text>
-              <Text style={styles.rowMeta}>
-                {[item.category?.name, item.date].filter(Boolean).join(" · ")}
+            <GlassCard r={radius.md} contentStyle={styles.row}>
+              <View
+                style={[
+                  styles.badge,
+                  { backgroundColor: tint(item.category?.color ?? "#6366F1", 0.16) },
+                ]}
+              >
+                <Text style={{ fontSize: 20 }}>{item.category?.icon ?? "💸"}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{item.title}</Text>
+                <Text style={styles.rowMeta}>
+                  {item.category?.name ?? "Sem categoria"}
+                </Text>
+              </View>
+              <Text style={styles.rowAmount}>
+                {formatMoney(item.amount, item.currency)}
               </Text>
-            </View>
-            <Text style={styles.rowAmount}>
-              {formatMoney(item.amount, item.currency)}
-            </Text>
-          </Pressable>
+            </GlassCard>
+          </Tappable>
         )}
       />
     </SafeAreaView>
@@ -191,7 +250,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   filters: { marginTop: spacing.md, flexGrow: 0 },
-  filtersRow: { paddingHorizontal: spacing.lg, gap: spacing.sm },
+  filtersRow: { flexDirection: "row", paddingHorizontal: spacing.lg, gap: spacing.sm },
   filterChip: {
     paddingVertical: 8,
     paddingHorizontal: 13,
@@ -201,16 +260,29 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   filterText: { color: colors.text, fontSize: 14, fontFamily: fonts.sans },
-  list: { padding: spacing.lg, gap: spacing.sm },
+  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 120 },
+  secHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  secTitle: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  secSum: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
+  rowWrap: { marginBottom: spacing.sm },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   badge: {
     width: 44,
@@ -222,5 +294,24 @@ const styles = StyleSheet.create({
   rowTitle: { color: colors.text, fontSize: 16, fontWeight: "500", fontFamily: fonts.sans },
   rowMeta: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans, marginTop: 2 },
   rowAmount: { color: colors.text, fontSize: 16, fontWeight: "500", fontFamily: fonts.sans },
-  empty: { color: colors.textMuted, textAlign: "center", marginTop: spacing.xl, fontFamily: fonts.sans },
+  empty: { alignItems: "center", marginTop: spacing.xl * 2, gap: spacing.sm },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTitle: { color: colors.text, fontSize: 17, fontWeight: "600", fontFamily: fonts.sans },
+  emptyText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontFamily: fonts.sans,
+    textAlign: "center",
+    maxWidth: 260,
+    lineHeight: 20,
+  },
 });
