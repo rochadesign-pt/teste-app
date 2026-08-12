@@ -13,6 +13,7 @@ import { LinearGradient as ExpoGradient } from "expo-linear-gradient";
 import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { GlassCard } from "@/components/GlassCard";
 import { InvestmentCard } from "@/components/InvestmentCard";
+import { Slider } from "@/components/Slider";
 import { Aura } from "@/components/Aura";
 import { api, type Investment } from "@/lib/api";
 import { projectInvestment } from "@/lib/invest";
@@ -141,14 +142,14 @@ export default function Investir() {
     return { value, contributed, growth: value - contributed, monthly };
   }, [investments]);
 
-  // Simulador
+  // Simulador (controlos manuais: slider + botões)
   const [initial, setInitial] = useState("1000");
-  const [monthly, setMonthly] = useState("150");
-  const [rate, setRate] = useState("7");
-  const [years, setYears] = useState("10");
+  const [monthly, setMonthly] = useState(150);
+  const [rate, setRate] = useState(7);
+  const [years, setYears] = useState(10);
 
   const sim = useMemo(
-    () => computeInvestment(num(initial), num(monthly), num(rate), Math.max(1, num(years, 1))),
+    () => computeInvestment(num(initial), monthly, rate, Math.max(1, years)),
     [initial, monthly, rate, years],
   );
 
@@ -251,12 +252,65 @@ export default function Investir() {
         {/* Simulador */}
         <GlassCard contentStyle={styles.cardInner}>
           <Text style={styles.cardTitle}>Simulador de investimento</Text>
-          <Text style={styles.cardSub}>Vê quanto rende com juros compostos.</Text>
+          <Text style={styles.cardSub}>Arrasta para simular — atualiza ao vivo.</Text>
+
           <View style={styles.grid}>
             <NumInput label="Capital inicial" value={initial} onChangeText={setInitial} unit="€" />
-            <NumInput label="Reforço mensal" value={monthly} onChangeText={setMonthly} unit="€" />
-            <NumInput label="Taxa de retorno anual" value={rate} onChangeText={setRate} unit="%" />
-            <NumInput label="Prazo" value={years} onChangeText={setYears} unit="anos" />
+          </View>
+
+          {/* Reforço mensal — slider manual */}
+          <View style={styles.control}>
+            <View style={styles.controlHead}>
+              <Text style={styles.fieldLabel}>Reforço mensal</Text>
+              <Text style={styles.controlValue}>
+                {formatMoney(monthly)}
+                <Text style={styles.controlUnit}> /mês</Text>
+              </Text>
+            </View>
+            <Slider value={monthly} min={0} max={2000} step={25} onChange={setMonthly} />
+            <View style={styles.scaleRow}>
+              <Text style={styles.scaleTxt}>0 €</Text>
+              <Text style={styles.scaleTxt}>2000 €</Text>
+            </View>
+          </View>
+
+          {/* Taxa de retorno — slider manual */}
+          <View style={styles.control}>
+            <View style={styles.controlHead}>
+              <Text style={styles.fieldLabel}>Taxa de retorno anual</Text>
+              <Text style={styles.controlValue}>
+                {rate.toLocaleString("pt-PT")}
+                <Text style={styles.controlUnit}> %/ano</Text>
+              </Text>
+            </View>
+            <Slider value={rate} min={1} max={12} step={0.5} onChange={setRate} />
+            <View style={styles.scaleRow}>
+              <Text style={styles.scaleTxt}>1%</Text>
+              <Text style={styles.scaleTxt}>12%</Text>
+            </View>
+          </View>
+
+          {/* Prazo — botões */}
+          <View style={styles.control}>
+            <Text style={styles.fieldLabel}>Prazo</Text>
+            <View style={styles.durChips}>
+              {[1, 3, 5, 10, 20, 30].map((y) => {
+                const active = years === y;
+                return (
+                  <Pressable
+                    key={y}
+                    onPress={() => setYears(y)}
+                    style={[styles.durChip, active && styles.durChipActive]}
+                  >
+                    <Text
+                      style={[styles.durChipTxt, active && styles.durChipTxtActive]}
+                    >
+                      {y} {y === 1 ? "ano" : "anos"}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
 
           <ExpoGradient
@@ -266,7 +320,7 @@ export default function Investir() {
             style={styles.result}
           >
             <Text style={styles.resultLabel}>
-              Valor estimado ao fim de {Math.max(1, Math.round(num(years, 1)))} anos
+              Valor estimado ao fim de {years} {years === 1 ? "ano" : "anos"}
             </Text>
             <Text style={styles.resultBig}>{formatMoney(sim.fv)}</Text>
             <GrowthChart val={sim.valSeries} inv={sim.invSeries} />
@@ -435,6 +489,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: fonts.sans,
   },
+  control: { marginTop: spacing.md, gap: 6 },
+  controlHead: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  controlValue: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+    letterSpacing: -0.4,
+  },
+  controlUnit: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "400",
+  },
+  scaleRow: { flexDirection: "row", justifyContent: "space-between" },
+  scaleTxt: { color: colors.textMuted, fontSize: 11, fontFamily: fonts.sans },
+  durChips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  durChip: {
+    paddingVertical: 9,
+    paddingHorizontal: 15,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  durChipActive: {
+    backgroundColor: "rgba(53,214,197,0.16)",
+    borderColor: colors.accents.teal,
+  },
+  durChipTxt: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+  },
+  durChipTxtActive: { color: colors.accents.teal },
   result: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,
