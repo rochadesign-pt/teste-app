@@ -9,20 +9,12 @@ import {
   View,
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
 import { api } from "@/lib/api";
-import { CategoryGlyph, ioniconFor } from "@/components/CategoryGlyph";
+import { CategoryGlyph, keyForIcon } from "@/components/CategoryGlyph";
+import { CATEGORY_ICONS } from "@/lib/hugeicons";
 import { Button, Field } from "@/components/ui";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
-
-const ICONS: (keyof typeof Ionicons.glyphMap)[] = [
-  "home-outline", "cart-outline", "restaurant-outline", "car-outline",
-  "bus-outline", "airplane-outline", "flash-outline", "water-outline",
-  "wifi-outline", "phone-portrait-outline", "shirt-outline", "fitness-outline",
-  "cafe-outline", "fast-food-outline", "gift-outline", "medkit-outline",
-  "school-outline", "paw-outline", "game-controller-outline", "card-outline",
-  "umbrella-outline", "book-outline", "musical-notes-outline", "bag-handle-outline",
-];
 const COLORS = [
   "#0A84FF", "#FF9500", "#35D6C5", "#FF375F", "#8B5CF6",
   "#34C759", "#FFD60A", "#40C8E0", "#6366F1", "#FF7A6B",
@@ -46,7 +38,7 @@ export default function CategoriaForm() {
 
   const [name, setName] = useState(params.name ?? "");
   const [icon, setIcon] = useState<string>(
-    ioniconFor(params.icon) || ICONS[0],
+    keyForIcon(params.icon) || "home",
   );
   const [color, setColor] = useState(params.color || COLORS[0]);
   const [budget, setBudget] = useState(
@@ -124,21 +116,22 @@ export default function CategoriaForm() {
 
         <Text style={styles.label}>Ícone</Text>
         <View style={styles.grid}>
-          {ICONS.map((ic) => {
-            const active = ic === icon;
+          {CATEGORY_ICONS.map((item) => {
+            const active = item.key === icon;
             return (
               <Pressable
-                key={ic}
-                onPress={() => setIcon(ic)}
+                key={item.key}
+                onPress={() => setIcon(item.key)}
                 style={[
                   styles.iconChip,
                   active && { backgroundColor: tint(color, 0.18), borderColor: color },
                 ]}
               >
-                <Ionicons
-                  name={ic}
+                <HugeiconsIcon
+                  icon={item.icon as any}
                   size={22}
                   color={active ? color : colors.text}
+                  strokeWidth={2}
                 />
               </Pressable>
             );
