@@ -336,7 +336,14 @@ export const api = {
   listCategories: async () => {
     try {
       const r = await apiFetch<{ categories: Category[] }>("/categories");
-      const list = await applyCatOverrides(r.categories);
+      const withOverrides = await applyCatOverrides(r.categories);
+      // Preserva categorias criadas localmente (ainda não no servidor).
+      const cache = await localGet<Category[]>("categories", []);
+      const serverIds = new Set(r.categories.map((c) => c._id));
+      const localOnly = cache.filter(
+        (c) => c._id.startsWith("local-") && !serverIds.has(c._id),
+      );
+      const list = [...withOverrides, ...localOnly];
       await localSet("categories", list);
       void flushCatOverrides();
       return list;
