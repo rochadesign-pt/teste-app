@@ -130,6 +130,9 @@ export type InvestmentInput = {
 export type Profile = {
   monthlyIncome: number;
   mealAllowance: number;
+  // Foto de perfil (data URI / uri local). Guardada só no dispositivo —
+  // não é enviada para o servidor.
+  photoUrl?: string;
 };
 
 // --- Categorias: overlay local (edições/eliminações por sincronizar) ---
@@ -278,7 +281,8 @@ export const api = {
       (p?.monthlyIncome || 0) > 0 || (p?.mealAllowance || 0) > 0;
     try {
       const r = await apiFetch<{ profile: Profile }>("/profile");
-      const srv = r.profile ?? empty;
+      // A foto vive só no dispositivo — preserva-a ao adotar dados do servidor.
+      const srv = { ...(r.profile ?? empty), photoUrl: local?.photoUrl };
       if (has(srv)) {
         await localSet("profile", srv);
         return srv;
@@ -297,17 +301,26 @@ export const api = {
     }
   },
 
-  updateProfile: async (input: Profile) => {
-    await localSet("profile", input); // guarda já no dispositivo
+  updateProfile: async (input: Partial<Profile>) => {
+    // Faz merge com o que já existe para atualizações parciais (ex.: só a
+    // foto, ou só o rendimento) não apagarem os restantes campos.
+    const prev = await localGet<Profile>("profile", {
+      monthlyIncome: 0,
+      mealAllowance: 0,
+    });
+    const merged: Profile = { ...prev, ...input };
+    await localSet("profile", merged); // guarda já no dispositivo
     try {
+      // A foto não vai para o servidor (data URI grande / schema não a tem).
+      const { photoUrl, ...serverPayload } = merged;
       await apiFetch<{ profile: Profile }>("/profile", {
         method: "PUT",
-        body: JSON.stringify(input),
+        body: JSON.stringify(serverPayload),
       });
     } catch {
       /* fica guardado localmente; sincroniza quando a função existir */
     }
-    return input;
+    return merged;
   },
 
   listGoals: () =>

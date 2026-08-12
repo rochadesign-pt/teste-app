@@ -83,20 +83,28 @@ export function Sparkline({
   height = 90,
   from = "#A5B4FC",
   to = "#6366F1",
+  projection,
 }: {
   values: number[];
   width: number;
   height?: number;
   from?: string;
   to?: string;
+  // Se definido, desenha um traço tracejado do último ponto até à margem
+  // direita, a apontar para a projeção (fim do período).
+  projection?: number;
 }) {
   if (values.length < 2) values = [0, ...values];
   const padY = 12;
   const insetL = 5;
   const insetR = 8;
-  const usableW = width - insetL - insetR;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const hasProj =
+    typeof projection === "number" && isFinite(projection) && projection > 0;
+  const projW = hasProj ? Math.min(72, width * 0.22) : 0;
+  const usableW = width - insetL - insetR - projW;
+  const scaleVals = hasProj ? [...values, projection as number] : values;
+  const min = Math.min(...scaleVals);
+  const max = Math.max(...scaleVals);
   const span = max - min || 1;
   const x = (i: number) => insetL + (i / (values.length - 1)) * usableW;
   const y = (v: number) =>
@@ -106,6 +114,8 @@ export function Sparkline({
   const area = `${line} L ${x(values.length - 1).toFixed(1)} ${height} L ${insetL} ${height} Z`;
   const lastX = x(values.length - 1);
   const lastY = y(values[values.length - 1]);
+  const projX = width - insetR;
+  const projY = hasProj ? y(projection as number) : lastY;
   // IDs únicos por cor — senão os gradientes SVG colidem entre instâncias
   // na mesma página (todos os gráficos ficariam com a mesma cor).
   const uid = `${from}${to}`.replace(/[^a-zA-Z0-9]/g, "");
@@ -135,6 +145,17 @@ export function Sparkline({
           // @ts-expect-error web-only: brilho subtil no traço
           style={{ filter: `drop-shadow(0 2px 6px ${to}66)` }}
         />
+        {hasProj && (
+          <Path
+            d={`M ${lastX.toFixed(1)} ${lastY.toFixed(1)} L ${projX.toFixed(1)} ${projY.toFixed(1)}`}
+            stroke={to}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeDasharray="1 7"
+            fill="none"
+            opacity={0.5}
+          />
+        )}
         <Circle cx={lastX} cy={lastY} r={7} fill={to} fillOpacity={0.18} />
         <Circle cx={lastX} cy={lastY} r={3.4} fill="#fff" />
       </Svg>

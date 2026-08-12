@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   filterText: { color: colors.text, fontSize: 14, fontFamily: fonts.sans },
-  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 120 },
+  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 130 },
   secHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

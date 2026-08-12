@@ -121,7 +121,7 @@ export default function Conta() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, gap: spacing.sm },
+  content: { padding: spacing.lg, gap: spacing.sm, paddingBottom: 120 },
   h1: {
     color: colors.text,
     fontSize: 30,

@@ -491,7 +491,7 @@ export default function Investir() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, gap: spacing.md },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: 120 },
   h1: {
     color: colors.text,
     fontSize: 30,

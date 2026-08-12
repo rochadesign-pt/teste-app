@@ -7,14 +7,24 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import Notification03Icon from "@hugeicons/core-free-icons/Notification03Icon";
+import Search01Icon from "@hugeicons/core-free-icons/Search01Icon";
 import { useAuth } from "@/contexts/AuthContext";
-import { api, type Expense, type Goal, type Subscription } from "@/lib/api";
+import {
+  api,
+  type Expense,
+  type Goal,
+  type Profile,
+  type Subscription,
+} from "@/lib/api";
+import { Avatar } from "@/components/Avatar";
 import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
 import { CategoryGlyph } from "@/components/CategoryGlyph";
 import { GoalCard } from "@/components/GoalCard";
@@ -53,10 +63,11 @@ type Period = "week" | "month" | "year";
 export default function ExpensesScreen() {
   const router = useRouter();
   const { session } = useAuth();
+  const { width } = useWindowDimensions();
   const name = (session?.user?.email ?? "").split("@")[0] || "Bem-vindo";
-  const initial = name.charAt(0).toUpperCase();
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Bom dia" : hour < 20 ? "Boa tarde" : "Boa noite";
+  const [photoUrl, setPhotoUrl] = useState<string | undefined>();
   const [period, setPeriod] = useState<Period>("month");
   const [hidden, setHidden] = useState(false);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -76,12 +87,15 @@ export default function ExpensesScreen() {
         api.listSubscriptions().catch(() => [] as Subscription[]),
         api
           .getProfile()
-          .catch(() => ({ monthlyIncome: 0, mealAllowance: 0 })),
+          .catch(
+            () => ({ monthlyIncome: 0, mealAllowance: 0 }) as Profile,
+          ),
       ]);
       setExpenses(exp);
       setGoals(gls);
       setSubs(sbs);
       setIncome((prof.monthlyIncome || 0) + (prof.mealAllowance || 0));
+      setPhotoUrl(prof.photoUrl);
     } catch (err) {
       Alert.alert("Erro ao carregar", (err as Error).message);
     } finally {
@@ -283,6 +297,15 @@ export default function ExpensesScreen() {
     };
   }, [monthTotal, prevTotal, cards, subs, now, income]);
 
+  const onPhoto = async (uri: string) => {
+    setPhotoUrl(uri);
+    try {
+      await api.updateProfile({ photoUrl: uri });
+    } catch {
+      /* fica guardado na próxima sincronização */
+    }
+  };
+
   const deleteSub = async (id: string) => {
     try {
       await api.deleteSubscription(id);
@@ -314,27 +337,41 @@ export default function ExpensesScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <Aura />
       <View style={styles.topbar}>
-        <View style={styles.greetRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initial}</Text>
-          </View>
+        <View style={styles.navLeft}>
+          <Avatar uri={photoUrl} name={name} size={46} onChange={onPhoto} />
           <View>
-            <Text style={styles.greetHi}>{greet} 👋</Text>
+            <Text style={styles.greetHi}>{greet}</Text>
             <Text style={styles.greetName} numberOfLines={1}>
               {name}
             </Text>
           </View>
         </View>
-        <Pressable
-          onPress={() => router.push("/(app)/(tabs)/conta")}
-          hitSlop={8}
-        >
-          <Ionicons
-            name="person-circle-outline"
-            size={30}
-            color={colors.textMuted}
-          />
-        </Pressable>
+        <View style={styles.navRight}>
+          <Pressable
+            style={styles.navBtn}
+            onPress={() => router.push("/(app)/(tabs)/conta")}
+            hitSlop={8}
+          >
+            <HugeiconsIcon
+              icon={Notification03Icon as any}
+              size={20}
+              color={colors.text}
+              strokeWidth={2}
+            />
+          </Pressable>
+          <Pressable
+            style={styles.navBtn}
+            onPress={() => router.push("/(app)/(tabs)/transacoes")}
+            hitSlop={8}
+          >
+            <HugeiconsIcon
+              icon={Search01Icon as any}
+              size={20}
+              color={colors.text}
+              strokeWidth={2}
+            />
+          </Pressable>
+        </View>
       </View>
 
       {(pullDist > 0 || refreshing) && (
@@ -363,27 +400,23 @@ export default function ExpensesScreen() {
           <View>
             {/* Wallet card */}
             <FadeInUp delay={40}>
-            <GlassCard
-              style={styles.wallet}
-              contentStyle={styles.walletInner}
-              fill={["#161618", "#111113"]}
-              sheen={0.18}
-            >
-              <View style={styles.walletTop}>
-                <Text style={styles.walletLabel}>Total gasto · {pd.label}</Text>
+            {/* Hero — sem container, centrado */}
+            <View style={styles.hero}>
+              <View style={styles.heroLabelRow}>
+                <Text style={styles.heroLabel}>Total gasto · {pd.label}</Text>
                 <Pressable onPress={() => setHidden((h) => !h)} hitSlop={10}>
                   <Ionicons
                     name={hidden ? "eye-off-outline" : "eye-outline"}
-                    size={18}
+                    size={15}
                     color={colors.textMuted}
                   />
                 </Pressable>
               </View>
-              <Text style={styles.walletAmount}>
+              <Text style={styles.heroAmount} numberOfLines={1} adjustsFontSizeToFit>
                 {hidden ? "••••• €" : formatMoney(pd.total)}
               </Text>
               {pd.hasPrev && !hidden && (
-                <Text style={styles.walletDelta}>
+                <Text style={styles.heroDelta}>
                   <Text
                     style={{ color: pd.delta >= 0 ? "#FF7A6B" : colors.success }}
                   >
@@ -392,17 +425,26 @@ export default function ExpensesScreen() {
                   {formatMoney(Math.abs(pd.delta))} vs período anterior
                 </Text>
               )}
-              {pd.total > 0 && (
-                <View style={styles.walletChart}>
-                  <Sparkline
-                    values={pd.series}
-                    width={300}
-                    height={72}
-                    from="#E8E8EA"
-                    to="#FFFFFF"
-                  />
-                </View>
-              )}
+            </View>
+
+            {/* Chart — largura total, a fundir com o fundo (sem container) */}
+            {pd.total > 0 && (
+              <View style={styles.chartWrap}>
+                <Sparkline
+                  values={pd.series}
+                  width={width}
+                  height={128}
+                  from="#E8E8EA"
+                  to="#FFFFFF"
+                  projection={
+                    period === "month" ? insights.projection : undefined
+                  }
+                />
+              </View>
+            )}
+
+            {/* Período */}
+            <View style={styles.segmentedWrap}>
               <View style={styles.segmented}>
                 {(["week", "month", "year"] as Period[]).map((p) => {
                   const labels: Record<Period, string> = {
@@ -426,7 +468,71 @@ export default function ExpensesScreen() {
                   );
                 })}
               </View>
-            </GlassCard>
+            </View>
+
+            {/* Resumo / Análise — logo por baixo do gráfico, como na referência */}
+            {monthExpenses.length > 0 && (
+              <View style={styles.analise}>
+                <View style={styles.analiseTop}>
+                  <View style={styles.analiseRing}>
+                    <Ring
+                      size={64}
+                      stroke={7}
+                      progress={
+                        totalBudget > 0
+                          ? budgetUsed
+                          : insights.hasIncome
+                            ? Math.min(1, monthTotal / income)
+                            : 0
+                      }
+                      color={colors.lime}
+                      track="rgba(255,255,255,0.1)"
+                      glow={false}
+                    />
+                    <View style={styles.analiseRingCenter}>
+                      <Text style={styles.analiseRingPct}>
+                        {Math.round(
+                          (totalBudget > 0
+                            ? budgetUsed
+                            : insights.hasIncome
+                              ? Math.min(1, monthTotal / income)
+                              : 0) * 100,
+                        )}
+                        %
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.analiseLabel}>✦ Análise do mês</Text>
+                    <Text style={styles.analiseHeadline}>{insights.headline}</Text>
+                  </View>
+                </View>
+                <View style={styles.analiseRows}>
+                  {insights.hasIncome ? (
+                    <Text style={styles.analiseRow}>
+                      💰 Saldo do mês: {formatMoney(insights.balance)} de{" "}
+                      {formatMoney(income)} · poupas{" "}
+                      {Math.round(insights.savingsRate * 100)}%
+                    </Text>
+                  ) : (
+                    <Pressable onPress={() => router.push("/(app)/rendimento")}>
+                      <Text style={[styles.analiseRow, styles.analiseCta]}>
+                        💰 Define o teu rendimento para veres quanto poupas →
+                      </Text>
+                    </Pressable>
+                  )}
+                  {insights.biggestCat && (
+                    <Text style={styles.analiseRow}>
+                      📊 Onde mais gastas: {insights.biggestCat.name} ·{" "}
+                      {formatMoney(insights.biggestCat.spent)}
+                    </Text>
+                  )}
+                  <Text style={styles.analiseRow}>
+                    🎯 Projeção fim do mês: ~{formatMoney(insights.projection)}
+                  </Text>
+                </View>
+              </View>
+            )}
 
             {/* Ações rápidas */}
             <View style={styles.actions}>
@@ -530,78 +636,6 @@ export default function ExpensesScreen() {
               </GradientStatCard>
             </View>
             </FadeInUp>
-
-            {/* Análise do mês */}
-            {monthExpenses.length > 0 && (
-              <FadeInUp delay={180}>
-              <View style={styles.analise}>
-                <View style={styles.analiseTop}>
-                  <View style={styles.analiseRing}>
-                    <Ring
-                      size={64}
-                      stroke={7}
-                      progress={
-                        totalBudget > 0
-                          ? budgetUsed
-                          : insights.hasIncome
-                            ? Math.min(1, monthTotal / income)
-                            : 0
-                      }
-                      color={colors.lime}
-                      track="rgba(255,255,255,0.1)"
-                      glow={false}
-                    />
-                    <View style={styles.analiseRingCenter}>
-                      <Text style={styles.analiseRingPct}>
-                        {Math.round(
-                          (totalBudget > 0
-                            ? budgetUsed
-                            : insights.hasIncome
-                              ? Math.min(1, monthTotal / income)
-                              : 0) * 100,
-                        )}
-                        %
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.analiseLabel}>✦ Análise do mês</Text>
-                    <Text style={styles.analiseHeadline}>{insights.headline}</Text>
-                  </View>
-                </View>
-                <View style={styles.analiseRows}>
-                  {insights.hasIncome ? (
-                    <Text style={styles.analiseRow}>
-                      💰 Saldo do mês: {formatMoney(insights.balance)} de{" "}
-                      {formatMoney(income)} · poupas{" "}
-                      {Math.round(insights.savingsRate * 100)}%
-                    </Text>
-                  ) : (
-                    <Pressable onPress={() => router.push("/(app)/rendimento")}>
-                      <Text style={[styles.analiseRow, styles.analiseCta]}>
-                        💰 Define o teu rendimento para veres quanto poupas →
-                      </Text>
-                    </Pressable>
-                  )}
-                  {insights.biggestCat && (
-                    <Text style={styles.analiseRow}>
-                      📊 Onde mais gastas: {insights.biggestCat.name} ·{" "}
-                      {formatMoney(insights.biggestCat.spent)}
-                    </Text>
-                  )}
-                  <Text style={styles.analiseRow}>
-                    🎯 Projeção fim do mês: ~{formatMoney(insights.projection)}
-                  </Text>
-                  {insights.biggestSub && (
-                    <Text style={styles.analiseRow}>
-                      💡 Cortar {insights.biggestSub.name} poupa{" "}
-                      {formatMoney(insights.biggestSub.amount * 12)}/ano
-                    </Text>
-                  )}
-                </View>
-              </View>
-              </FadeInUp>
-            )}
 
             {/* Categorias */}
             {cards.length > 0 && (
@@ -790,16 +824,6 @@ export default function ExpensesScreen() {
         )}
       />
 
-      <Tappable style={styles.fab} scaleTo={0.9} onPress={() => router.push("/(app)/new")}>
-        <LinearGradient
-          colors={["#FFFFFF", "#ECECEE"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fabInner}
-        >
-          <Text style={styles.fabText}>+</Text>
-        </LinearGradient>
-      </Tappable>
     </SafeAreaView>
   );
 }
@@ -902,8 +926,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  navLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  navRight: { flexDirection: "row", alignItems: "center", gap: 12 },
+  navBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   brand: {
     color: colors.text,
@@ -998,7 +1034,7 @@ const styles = StyleSheet.create({
   gridRingRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   analise: {
     marginHorizontal: spacing.lg,
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
     borderRadius: 19,
     padding: spacing.lg,
     backgroundColor: "rgba(255,255,255,0.04)",
@@ -1056,19 +1092,32 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     paddingRight: spacing.md,
   },
-  list: { paddingBottom: 120, gap: spacing.sm },
+  list: { paddingBottom: 150, gap: spacing.sm },
 
-  hero: { alignItems: "center", paddingTop: spacing.lg, paddingHorizontal: spacing.lg },
-  heroLabel: { color: colors.textMuted, fontSize: 14, fontFamily: fonts.sans },
+  hero: { alignItems: "center", paddingTop: spacing.xl, paddingHorizontal: spacing.lg },
+  heroLabelRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  heroLabel: { color: colors.textMuted, fontSize: 15, fontFamily: fonts.sans },
   heroAmount: {
     color: colors.text,
-    fontSize: 52,
-    fontWeight: "400",
+    fontSize: 56,
+    fontWeight: "500",
     fontFamily: fonts.sans,
-    letterSpacing: -1.8,
+    letterSpacing: -2,
     marginTop: spacing.sm,
+    textAlign: "center",
   },
-  heroDelta: { color: colors.textMuted, fontSize: 14, fontFamily: fonts.sans, marginTop: 6 },
+  heroDelta: {
+    color: colors.textMuted,
+    fontSize: 14.5,
+    fontFamily: fonts.sans,
+    marginTop: 8,
+  },
+  chartWrap: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs,
+    alignItems: "center",
+  },
+  segmentedWrap: { paddingHorizontal: spacing.lg, marginTop: spacing.sm },
 
   budget: {
     flexDirection: "row",
@@ -1203,7 +1252,7 @@ const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     right: spacing.lg,
-    bottom: spacing.xl,
+    bottom: 104,
     borderRadius: 30,
     shadowColor: "#000",
     shadowOpacity: 0.4,
