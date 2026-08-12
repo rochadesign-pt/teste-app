@@ -2,7 +2,8 @@ import { StyleSheet, Text, View } from "react-native";
 import type { Investment } from "@/lib/api";
 import { projectInvestment, formatNextDeposit } from "@/lib/invest";
 import { formatMoney } from "@/lib/format";
-import { GlassCard } from "./GlassCard";
+import { IconBadge } from "./IconBadge";
+import { cardShell } from "./cardShell";
 import { Tappable } from "./Tappable";
 import { Sparkline } from "./charts";
 import { colors, fonts, spacing } from "@/constants/theme";
@@ -23,11 +24,9 @@ export function InvestmentCard({
   const p = projectInvestment(inv);
   return (
     <Tappable scaleTo={0.98} onPress={onPress}>
-      <GlassCard contentStyle={styles.inner}>
+      <View style={styles.card}>
         <View style={styles.head}>
-          <View style={[styles.icon, { backgroundColor: tint(color, 0.9) }]}>
-            <Text style={{ fontSize: 16 }}>{inv.icon ?? "📈"}</Text>
-          </View>
+          <IconBadge color={color} icon={inv.icon} progress={1} size={44} />
           <Text style={styles.name} numberOfLines={1}>
             {inv.name}
           </Text>
@@ -73,24 +72,17 @@ export function InvestmentCard({
             <Text style={styles.footV}>{formatNextDeposit(p.nextDeposit)}</Text>
           </View>
         </View>
-      </GlassCard>
+      </View>
     </Tappable>
   );
 }
 
 const styles = StyleSheet.create({
-  inner: { padding: spacing.md, gap: 4 },
+  card: { ...cardShell, gap: 4 },
   head: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  icon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   name: {
     flex: 1,
-    color: colors.text,
+    color: "#F5F5F7",
     fontSize: 16,
     fontWeight: "500",
     fontFamily: fonts.sans,
@@ -98,7 +90,7 @@ const styles = StyleSheet.create({
   chip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   chipTxt: { fontSize: 12.5, fontWeight: "600", fontFamily: fonts.sans },
   value: {
-    color: colors.text,
+    color: "#F5F5F7",
     fontSize: 28,
     fontWeight: "500",
     fontFamily: fonts.sans,
@@ -118,7 +110,7 @@ const styles = StyleSheet.create({
   footCol: { gap: 2 },
   footK: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.sans },
   footV: {
-    color: colors.text,
+    color: "#F5F5F7",
     fontSize: 14.5,
     fontWeight: "500",
     fontFamily: fonts.sans,

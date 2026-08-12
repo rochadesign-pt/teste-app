@@ -35,6 +35,11 @@ const EMOJI_ICON: Record<string, string> = {
   "⚽": "football-outline", "🏀": "basketball-outline",
   "🌱": "leaf-outline", "🌳": "leaf-outline",
   "🧾": "receipt-outline", "📝": "document-text-outline",
+  // objetivos / investimentos
+  "🛟": "shield-outline", "🛡️": "shield-outline", "🎯": "flag-outline",
+  "🪙": "cash-outline", "🚀": "rocket-outline",
+  "💎": "diamond-outline", "🏆": "trophy-outline", "⭐": "star-outline",
+  "🌍": "earth-outline",
 };
 
 /**
