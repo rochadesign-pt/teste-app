@@ -4,12 +4,19 @@ Copia e cola este bloco no terminal, **na raiz do projeto** (`teste-app/`),
 com o Supabase CLI já ligado ao projeto (`supabase link` já feito antes).
 
 ```bash
-# Publica as edge functions (investimentos + rendimento + categorias)
+# Publica as edge functions (investimentos + rendimento + categorias + viagens)
 supabase functions deploy investments
 supabase functions deploy investment
 supabase functions deploy profile
 supabase functions deploy category
+supabase functions deploy trips
 ```
+
+> **`trips` (NOVA)** — sincroniza as viagens/despesas de férias entre
+> dispositivos. Sem este deploy, as viagens ficam só no aparelho onde as
+> crias (não aparecem na web). Depois de publicares, abre a app **no
+> telemóvel uma vez** para ela enviar as viagens que já lá tens; a partir
+> daí aparecem em todo o lado.
 
 > `category` é a mais recente (editar/apagar categorias e orçamentos).
 > Criar e listar categorias já funcionava antes. Mesmo sem este deploy, a

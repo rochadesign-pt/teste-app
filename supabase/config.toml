@@ -34,3 +34,6 @@ verify_jwt = true
 
 [functions.category]
 verify_jwt = true
+
+[functions.trips]
+verify_jwt = true

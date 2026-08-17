@@ -204,6 +204,44 @@ async function flushCatOverrides() {
   }
 }
 
+// --- Viagens: sincronização (local-first + servidor) ---
+// Envia todo o conjunto de viagens para o servidor. Fire-and-forget: se a
+// função ainda não estiver publicada ou não houver rede, fica só local.
+async function pushTrips(trips: Trip[]): Promise<void> {
+  try {
+    await apiFetch("/trips", {
+      method: "PUT",
+      body: JSON.stringify({ trips }),
+    });
+  } catch {
+    /* offline / função por publicar — continua a valer o local */
+  }
+}
+
+// Guarda localmente e empurra para o servidor.
+async function saveTrips(next: Trip[]): Promise<void> {
+  await localSet("trips", next);
+  void pushTrips(next);
+}
+
+// Junta o servidor (fonte de verdade) com viagens ainda só locais e
+// reenvia-as (auto-cura viagens criadas antes de existir sincronização).
+async function syncTrips(): Promise<Trip[]> {
+  const local = await localGet<Trip[]>("trips", []);
+  try {
+    const r = await apiFetch<{ trips: Trip[] }>("/trips");
+    const server = Array.isArray(r.trips) ? r.trips : [];
+    const serverIds = new Set(server.map((t) => t._id));
+    const localOnly = local.filter((t) => !serverIds.has(t._id));
+    const merged = [...server, ...localOnly];
+    await localSet("trips", merged);
+    if (localOnly.length) void pushTrips(merged);
+    return merged;
+  } catch {
+    return local;
+  }
+}
+
 export const api = {
   listSubscriptions: () =>
     apiFetch<{ subscriptions: Subscription[] }>("/subscriptions").then(
@@ -469,11 +507,11 @@ export const api = {
       method: "DELETE",
     }),
 
-  // --- Viagens / despesas partilhadas (só local, por agora) ---
-  listTrips: () => localGet<Trip[]>("trips", []),
+  // --- Viagens / despesas partilhadas (local-first + sincronização) ---
+  listTrips: () => syncTrips(),
 
   getTrip: async (id: string) => {
-    const list = await localGet<Trip[]>("trips", []);
+    const list = await syncTrips();
     return list.find((t) => t._id === id) ?? null;
   },
 
@@ -493,23 +531,20 @@ export const api = {
       createdAt: new Date().toISOString(),
     };
     const list = await localGet<Trip[]>("trips", []);
-    await localSet("trips", [trip, ...list]);
+    await saveTrips([trip, ...list]);
     return trip;
   },
 
   updateTrip: async (id: string, patch: Partial<Trip>) => {
     const list = await localGet<Trip[]>("trips", []);
     const next = list.map((t) => (t._id === id ? { ...t, ...patch } : t));
-    await localSet("trips", next);
+    await saveTrips(next);
     return next.find((t) => t._id === id)!;
   },
 
   deleteTrip: async (id: string) => {
     const list = await localGet<Trip[]>("trips", []);
-    await localSet(
-      "trips",
-      list.filter((t) => t._id !== id),
-    );
+    await saveTrips(list.filter((t) => t._id !== id));
   },
 
   addTripExpense: async (
@@ -521,7 +556,7 @@ export const api = {
     const next = list.map((t) =>
       t._id === tripId ? { ...t, expenses: [exp, ...t.expenses] } : t,
     );
-    await localSet("trips", next);
+    await saveTrips(next);
     return exp;
   },
 
@@ -532,7 +567,7 @@ export const api = {
         ? { ...t, expenses: t.expenses.filter((e) => e.id !== expenseId) }
         : t,
     );
-    await localSet("trips", next);
+    await saveTrips(next);
   },
 
   addTripPayment: async (
@@ -546,7 +581,7 @@ export const api = {
         ? { ...t, payments: [...(t.payments ?? []), pay] }
         : t,
     );
-    await localSet("trips", next);
+    await saveTrips(next);
     return pay;
   },
 
@@ -557,6 +592,6 @@ export const api = {
         ? { ...t, payments: (t.payments ?? []).filter((p) => p.id !== paymentId) }
         : t,
     );
-    await localSet("trips", next);
+    await saveTrips(next);
   },
 };

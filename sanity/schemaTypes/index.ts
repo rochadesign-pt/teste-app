@@ -4,6 +4,7 @@ import { goal } from "./goal";
 import { subscription } from "./subscription";
 import { investment } from "./investment";
 import { profile } from "./profile";
+import { tripStore } from "./tripStore";
 
 export const schemaTypes = [
   expense,
@@ -12,4 +13,5 @@ export const schemaTypes = [
   subscription,
   investment,
   profile,
+  tripStore,
 ];
