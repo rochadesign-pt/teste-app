@@ -41,6 +41,15 @@ export default function AppLayout() {
         name="categoria-form"
         options={{ title: "Categoria", presentation: "modal" }}
       />
+      <Stack.Screen name="grupo" options={{ title: "Viagem" }} />
+      <Stack.Screen
+        name="grupo-form"
+        options={{ title: "Nova viagem", presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="grupo-despesa"
+        options={{ title: "Despesa", presentation: "modal" }}
+      />
     </Stack>
   );
 }

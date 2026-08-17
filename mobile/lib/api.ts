@@ -135,6 +135,26 @@ export type Profile = {
   photoUrl?: string;
 };
 
+// --- Viagens / despesas partilhadas em grupo ---
+export type TripMember = { id: string; name: string };
+export type TripExpense = {
+  id: string;
+  description: string;
+  amount: number;
+  paidBy: string; // id do membro que pagou
+  split: string[]; // ids dos membros que partilham (divisão igual)
+  date: string;
+};
+export type Trip = {
+  _id: string;
+  name: string;
+  emoji: string;
+  currency: string;
+  members: TripMember[];
+  expenses: TripExpense[];
+  createdAt: string;
+};
+
 // --- Categorias: overlay local (edições/eliminações por sincronizar) ---
 type CatEdits = Record<string, Partial<CategoryInput>>;
 
@@ -439,4 +459,70 @@ export const api = {
     apiFetch<{ success: boolean }>(`/expense?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     }),
+
+  // --- Viagens / despesas partilhadas (só local, por agora) ---
+  listTrips: () => localGet<Trip[]>("trips", []),
+
+  getTrip: async (id: string) => {
+    const list = await localGet<Trip[]>("trips", []);
+    return list.find((t) => t._id === id) ?? null;
+  },
+
+  createTrip: async (input: {
+    name: string;
+    emoji?: string;
+    currency?: string;
+    members: TripMember[];
+  }) => {
+    const trip: Trip = {
+      _id: localId(),
+      name: input.name,
+      emoji: input.emoji ?? "🏖️",
+      currency: input.currency ?? "EUR",
+      members: input.members,
+      expenses: [],
+      createdAt: new Date().toISOString(),
+    };
+    const list = await localGet<Trip[]>("trips", []);
+    await localSet("trips", [trip, ...list]);
+    return trip;
+  },
+
+  updateTrip: async (id: string, patch: Partial<Trip>) => {
+    const list = await localGet<Trip[]>("trips", []);
+    const next = list.map((t) => (t._id === id ? { ...t, ...patch } : t));
+    await localSet("trips", next);
+    return next.find((t) => t._id === id)!;
+  },
+
+  deleteTrip: async (id: string) => {
+    const list = await localGet<Trip[]>("trips", []);
+    await localSet(
+      "trips",
+      list.filter((t) => t._id !== id),
+    );
+  },
+
+  addTripExpense: async (
+    tripId: string,
+    input: Omit<TripExpense, "id">,
+  ) => {
+    const list = await localGet<Trip[]>("trips", []);
+    const exp: TripExpense = { id: localId(), ...input };
+    const next = list.map((t) =>
+      t._id === tripId ? { ...t, expenses: [exp, ...t.expenses] } : t,
+    );
+    await localSet("trips", next);
+    return exp;
+  },
+
+  deleteTripExpense: async (tripId: string, expenseId: string) => {
+    const list = await localGet<Trip[]>("trips", []);
+    const next = list.map((t) =>
+      t._id === tripId
+        ? { ...t, expenses: t.expenses.filter((e) => e.id !== expenseId) }
+        : t,
+    );
+    await localSet("trips", next);
+  },
 };

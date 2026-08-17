@@ -5,6 +5,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import Home07Icon from "@hugeicons/core-free-icons/Home07Icon";
 import Exchange01Icon from "@hugeicons/core-free-icons/Exchange01Icon";
 import ChartIncreaseIcon from "@hugeicons/core-free-icons/ChartIncreaseIcon";
+import Beach02Icon from "@hugeicons/core-free-icons/Beach02Icon";
 import UserIcon from "@hugeicons/core-free-icons/UserIcon";
 import { colors } from "@/constants/theme";
 
@@ -12,6 +13,7 @@ const ICONS: Record<string, unknown> = {
   index: Home07Icon,
   transacoes: Exchange01Icon,
   investir: ChartIncreaseIcon,
+  ferias: Beach02Icon,
   conta: UserIcon,
 };
 
@@ -73,8 +75,8 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
+    gap: 2,
+    paddingHorizontal: 10,
     height: 66,
     borderRadius: 999,
     backgroundColor: "rgba(255,255,255,0.96)",
@@ -92,7 +94,7 @@ const styles = StyleSheet.create({
     }),
   },
   item: {
-    width: 58,
+    width: 54,
     alignItems: "center",
     justifyContent: "center",
   },
