@@ -19,14 +19,14 @@ export default function Root({ children }: PropsWithChildren) {
 
         {/* PWA / instalável */}
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0A0A0B" />
+        <meta name="theme-color" content="#F1F3F6" />
 
         {/* iOS: comportamento de "app" no ecrã principal */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
+          content="default"
         />
         <meta name="apple-mobile-web-app-title" content="Custos" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -42,7 +42,7 @@ export default function Root({ children }: PropsWithChildren) {
                 font-weight: 100 900;
                 font-display: swap;
               }
-              html, body { background-color: #0A0A0B; }
+              html, body { background-color: #F1F3F6; }
             `,
           }}
         />

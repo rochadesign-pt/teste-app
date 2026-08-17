@@ -11,7 +11,7 @@ export function ProgressBar({
   from,
   to,
   height = 8,
-  track = "rgba(255,255,255,0.12)",
+  track = "rgba(15,23,42,0.08)",
 }: {
   progress: number;
   from?: string;

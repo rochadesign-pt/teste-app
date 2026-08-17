@@ -46,7 +46,7 @@ function RootNavigation() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <AuthProvider>
         <RootNavigation />
       </AuthProvider>
