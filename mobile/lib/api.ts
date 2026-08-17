@@ -218,27 +218,36 @@ async function pushTrips(trips: Trip[]): Promise<void> {
   }
 }
 
-// Guarda localmente e empurra para o servidor.
+// Guarda localmente e empurra para o servidor. IMPORTANTE: espera pelo
+// envio — senão o próximo GET (ex.: ao voltar à lista após apagar) pode
+// correr antes de o servidor gravar e "ressuscitar" o que foi apagado.
 async function saveTrips(next: Trip[]): Promise<void> {
   await localSet("trips", next);
-  void pushTrips(next);
+  await pushTrips(next);
 }
 
 // Junta o servidor (fonte de verdade) com viagens ainda só locais e
 // reenvia-as (auto-cura viagens criadas antes de existir sincronização).
+// As viagens apagadas (tombstones) nunca são reintroduzidas.
 async function syncTrips(): Promise<Trip[]> {
   const local = await localGet<Trip[]>("trips", []);
+  const deleted = new Set(await localGet<string[]>("tripDeletes", []));
   try {
     const r = await apiFetch<{ trips: Trip[] }>("/trips");
-    const server = Array.isArray(r.trips) ? r.trips : [];
+    const raw = Array.isArray(r.trips) ? r.trips : [];
+    const server = raw.filter((t) => !deleted.has(t._id));
     const serverIds = new Set(server.map((t) => t._id));
-    const localOnly = local.filter((t) => !serverIds.has(t._id));
+    const localOnly = local.filter(
+      (t) => !serverIds.has(t._id) && !deleted.has(t._id),
+    );
     const merged = [...server, ...localOnly];
     await localSet("trips", merged);
-    if (localOnly.length) void pushTrips(merged);
+    // Reenvia se há locais por sincronizar OU se o servidor ainda tinha algo
+    // que já foi apagado aqui (propaga a eliminação).
+    if (localOnly.length || raw.length !== server.length) void pushTrips(merged);
     return merged;
   } catch {
-    return local;
+    return local.filter((t) => !deleted.has(t._id));
   }
 }
 
@@ -543,6 +552,10 @@ export const api = {
   },
 
   deleteTrip: async (id: string) => {
+    // Regista o tombstone para o apagar não ser desfeito por um GET com
+    // dados em atraso (ou por outro dispositivo que ainda o tenha local).
+    const dels = await localGet<string[]>("tripDeletes", []);
+    if (!dels.includes(id)) await localSet("tripDeletes", [...dels, id]);
     const list = await localGet<Trip[]>("trips", []);
     await saveTrips(list.filter((t) => t._id !== id));
   },
