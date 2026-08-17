@@ -1,4 +1,4 @@
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
@@ -7,7 +7,7 @@ import Exchange01Icon from "@hugeicons/core-free-icons/Exchange01Icon";
 import ChartIncreaseIcon from "@hugeicons/core-free-icons/ChartIncreaseIcon";
 import Beach02Icon from "@hugeicons/core-free-icons/Beach02Icon";
 import UserIcon from "@hugeicons/core-free-icons/UserIcon";
-import { colors } from "@/constants/theme";
+import { colors, fonts } from "@/constants/theme";
 
 const ICONS: Record<string, unknown> = {
   index: Home07Icon,
@@ -17,9 +17,19 @@ const ICONS: Record<string, unknown> = {
   conta: UserIcon,
 };
 
+// Rótulo curto por tab (mantém a barra compacta com 5 separadores).
+const LABELS: Record<string, string> = {
+  index: "Início",
+  transacoes: "Gastos",
+  investir: "Investir",
+  ferias: "Férias",
+  conta: "Conta",
+};
+
 /**
- * "Gravitating" tab bar: pílula flutuante, destacada das margens, com o item
- * ativo elevado num círculo de acento que salta acima da barra.
+ * Tab bar flutuante ao estilo do GitHub mobile: pílula branca destacada das
+ * margens, cada separador com ícone + rótulo e o ativo realçado numa cápsula
+ * de acento.
  */
 export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -32,6 +42,8 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
         {state.routes.map((route, i) => {
           const focused = state.index === i;
           const icon = ICONS[route.name] ?? Home07Icon;
+          const label = LABELS[route.name] ?? route.name;
+          const color = focused ? colors.primary : colors.textMuted;
           const onPress = () => {
             const event = navigation.emit({
               type: "tabPress",
@@ -45,16 +57,19 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
               key={route.key}
               onPress={onPress}
               style={styles.item}
-              hitSlop={10}
+              hitSlop={8}
             >
-              <View style={[styles.icon, focused && styles.iconActive]}>
+              <View style={[styles.pill, focused && styles.pillActive]}>
                 <HugeiconsIcon
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   icon={icon as any}
-                  size={24}
-                  color={focused ? "#FFFFFF" : colors.textMuted}
+                  size={22}
+                  color={color}
                   strokeWidth={2}
                 />
+                <Text style={[styles.label, { color }]} numberOfLines={1}>
+                  {label}
+                </Text>
               </View>
             </Pressable>
           );
@@ -75,14 +90,12 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
-    paddingHorizontal: 10,
-    height: 66,
-    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: 30,
     backgroundColor: "rgba(255,255,255,0.96)",
     borderWidth: 1,
     borderColor: "rgba(14,15,19,0.06)",
-    // Sombra para "flutuar".
     shadowColor: "#0B1220",
     shadowOpacity: 0.12,
     shadowRadius: 28,
@@ -93,19 +106,19 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  item: {
-    width: 54,
+  item: { alignItems: "center", justifyContent: "center" },
+  pill: {
     alignItems: "center",
-    justifyContent: "center",
+    gap: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 16,
   },
-  icon: {
-    width: 48,
-    height: 48,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconActive: {
-    backgroundColor: colors.ink,
+  pillActive: { backgroundColor: "rgba(47,107,246,0.12)" },
+  label: {
+    fontSize: 10.5,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+    letterSpacing: -0.1,
   },
 });
