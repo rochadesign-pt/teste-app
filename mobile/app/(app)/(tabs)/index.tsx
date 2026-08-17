@@ -30,7 +30,8 @@ import { CategoryGlyph } from "@/components/CategoryGlyph";
 import { GoalCard } from "@/components/GoalCard";
 import { Tappable } from "@/components/Tappable";
 import { FadeInUp } from "@/components/FadeInUp";
-import { Ring, Sparkline } from "@/components/charts";
+import { Donut, Ring, Sparkline } from "@/components/charts";
+import { ProgressBar } from "@/components/ProgressBar";
 import { formatMoney } from "@/lib/format";
 import { usePullToRefresh } from "@/lib/usePullToRefresh";
 import { colors, fonts, radius, shadow, spacing } from "@/constants/theme";
@@ -546,6 +547,37 @@ export default function ExpensesScreen() {
               </View>
             )}
 
+            {/* Fluxo do mês (D) — Rendimento / Despesas / Saldo */}
+            {income > 0 && (
+              <View style={styles.flow}>
+                <View style={styles.flowCol}>
+                  <Text style={styles.flowK}>Rendimento</Text>
+                  <Text style={[styles.flowV, { color: colors.success }]}>
+                    {formatMoney(income)}
+                  </Text>
+                </View>
+                <View style={styles.flowDivider} />
+                <View style={styles.flowCol}>
+                  <Text style={styles.flowK}>Despesas</Text>
+                  <Text style={[styles.flowV, { color: colors.danger }]}>
+                    {formatMoney(monthTotal)}
+                  </Text>
+                </View>
+                <View style={styles.flowDivider} />
+                <View style={styles.flowCol}>
+                  <Text style={styles.flowK}>Saldo</Text>
+                  <Text
+                    style={[
+                      styles.flowV,
+                      { color: income - monthTotal >= 0 ? colors.text : colors.danger },
+                    ]}
+                  >
+                    {formatMoney(income - monthTotal)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
             {/* Ações rápidas */}
             <View style={styles.actions}>
               <ActionBtn
@@ -633,18 +665,83 @@ export default function ExpensesScreen() {
             </View>
             </FadeInUp>
 
-            {/* Categorias */}
+            {/* Gastos por categoria — donut + legenda (A) */}
             {cards.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Gastos por categoria</Text>
+                <View style={styles.donutCard}>
+                  <Donut
+                    size={130}
+                    thickness={20}
+                    segments={cards.map((c) => ({ value: c.spent, color: c.color }))}
+                  />
+                  <View style={styles.legend}>
+                    {cards.slice(0, 5).map((c) => (
+                      <View key={c.name} style={styles.legendRow}>
+                        <View style={[styles.legendDot, { backgroundColor: c.color }]} />
+                        <Text style={styles.legendName} numberOfLines={1}>
+                          {c.name}
+                        </Text>
+                        <Text style={styles.legendPct}>
+                          {Math.round((c.spent / monthTotal) * 100)}%
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
                 <FlatList
                   horizontal
                   data={cards}
                   keyExtractor={(c, i) => c.name + i}
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.cardsRow}
+                  contentContainerStyle={[styles.cardsRow, { marginTop: spacing.md }]}
                   renderItem={({ item }) => <CategoryCard data={item} />}
                 />
+              </View>
+            )}
+
+            {/* Orçamentos — gasto vs limite por categoria (B) */}
+            {cards.some((c) => !!c.budget && c.budget > 0) && (
+              <View style={styles.section}>
+                <View style={styles.secHead}>
+                  <Text style={styles.secTitle}>Orçamentos</Text>
+                  <Pressable onPress={() => router.push("/(app)/categorias")}>
+                    <Text style={styles.secLink}>Gerir ›</Text>
+                  </Pressable>
+                </View>
+                <View style={styles.budgetList}>
+                  {cards
+                    .filter((c) => !!c.budget && c.budget > 0)
+                    .map((c, i) => {
+                      const budget = c.budget as number;
+                      const pct = Math.min(1, c.spent / budget);
+                      const over = c.spent > budget;
+                      return (
+                        <View
+                          key={c.name}
+                          style={[styles.budgetRow, i > 0 && styles.budgetDivider]}
+                        >
+                          <View style={styles.budgetTop}>
+                            <View style={[styles.legendDot, { backgroundColor: c.color }]} />
+                            <Text style={styles.budgetName} numberOfLines={1}>
+                              {c.name}
+                            </Text>
+                            <Text style={styles.budgetNums}>
+                              {formatMoney(c.spent)}{" "}
+                              <Text style={styles.budgetOf}>
+                                / {formatMoney(budget)}
+                              </Text>
+                            </Text>
+                          </View>
+                          <ProgressBar
+                            progress={pct}
+                            to={over ? colors.danger : c.color}
+                            height={6}
+                          />
+                        </View>
+                      );
+                    })}
+                </View>
               </View>
             )}
 
@@ -1059,6 +1156,67 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
   },
   gridRingRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  // Fluxo do mês (D)
+  flow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    paddingVertical: spacing.md,
+    ...shadow.card,
+  },
+  flowCol: { flex: 1, alignItems: "center", gap: 3 },
+  flowK: { color: colors.textMuted, fontSize: 12, fontFamily: fonts.sans },
+  flowV: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: fonts.sans,
+    letterSpacing: -0.4,
+  },
+  flowDivider: { width: 1, height: 30, backgroundColor: colors.border },
+  // Donut de categorias (A)
+  donutCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginHorizontal: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: spacing.md,
+    ...shadow.card,
+  },
+  legend: { flex: 1, gap: 9 },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  legendDot: { width: 9, height: 9, borderRadius: 999 },
+  legendName: { flex: 1, color: colors.text, fontSize: 14, fontFamily: fonts.sans },
+  legendPct: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+  },
+  // Orçamentos por categoria (B)
+  budgetList: {
+    marginHorizontal: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    paddingHorizontal: spacing.md,
+    ...shadow.card,
+  },
+  budgetRow: { paddingVertical: 13, gap: 8 },
+  budgetDivider: { borderTopWidth: 1, borderTopColor: colors.border },
+  budgetTop: { flexDirection: "row", alignItems: "center", gap: 8 },
+  budgetName: { flex: 1, color: colors.text, fontSize: 14.5, fontFamily: fonts.sans },
+  budgetNums: {
+    color: colors.text,
+    fontSize: 13.5,
+    fontWeight: "600",
+    fontFamily: fonts.sans,
+  },
+  budgetOf: { color: colors.textMuted, fontWeight: "400" },
   analise: {
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,

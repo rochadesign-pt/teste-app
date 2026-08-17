@@ -9,6 +9,61 @@ import Svg, {
 } from "react-native-svg";
 import { colors } from "@/constants/theme";
 
+/**
+ * Donut de segmentos (distribuição por categoria). Cada segmento é um arco
+ * proporcional ao seu valor; um pequeno espaço separa-os visualmente.
+ */
+export function Donut({
+  segments,
+  size = 150,
+  thickness = 20,
+}: {
+  segments: { value: number; color: string }[];
+  size?: number;
+  thickness?: number;
+}) {
+  const r = (size - thickness) / 2;
+  const c = 2 * Math.PI * r;
+  const total = segments.reduce((s, x) => s + Math.max(0, x.value), 0) || 1;
+  const gap = segments.length > 1 ? c * 0.012 : 0; // espaço entre fatias
+  let acc = 0;
+  return (
+    <Svg width={size} height={size}>
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        stroke={colors.surfaceAlt}
+        strokeWidth={thickness}
+        fill="none"
+      />
+      <G rotation={-90} origin={`${size / 2}, ${size / 2}`}>
+        {segments.map((seg, i) => {
+          const frac = Math.max(0, seg.value) / total;
+          const len = Math.max(0, frac * c - gap);
+          const offset = -acc * c;
+          acc += frac;
+          if (len <= 0) return null;
+          return (
+            <Circle
+              key={i}
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              stroke={seg.color}
+              strokeWidth={thickness}
+              strokeDasharray={`${len} ${c - len}`}
+              strokeDashoffset={offset}
+              strokeLinecap="round"
+              fill="none"
+            />
+          );
+        })}
+      </G>
+    </Svg>
+  );
+}
+
 export function Ring({
   size = 60,
   stroke = 4,
