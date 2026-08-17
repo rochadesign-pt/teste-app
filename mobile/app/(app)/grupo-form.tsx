@@ -13,17 +13,35 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api, type TripMember } from "@/lib/api";
 import { Button, Field } from "@/components/ui";
+import { CategoryGlyph } from "@/components/CategoryGlyph";
+import { CATEGORY_ICONS } from "@/lib/hugeicons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
 import { localId } from "@/lib/localStore";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
-const EMOJIS = ["🏖️", "✈️", "🏝️", "⛰️", "🎿", "🏕️", "🚗", "🍻", "🎉", "🏙️"];
+// Subconjunto de ícones adequado a viagens.
+const TRIP_KEYS = [
+  "beach",
+  "airplane",
+  "car",
+  "bus",
+  "coffee",
+  "football",
+  "gift",
+  "rocket",
+  "music",
+  "home",
+];
+const TRIP_ICONS = TRIP_KEYS.map(
+  (k) => CATEGORY_ICONS.find((c) => c.key === k)!,
+).filter(Boolean);
 
 export default function GrupoForm() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
 
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState(EMOJIS[0]);
+  const [emoji, setEmoji] = useState(TRIP_ICONS[0].key);
   const [members, setMembers] = useState<TripMember[]>([
     { id: localId(), name: "Eu" },
   ]);
@@ -75,7 +93,7 @@ export default function GrupoForm() {
 
         <View style={styles.preview}>
           <View style={styles.previewEmoji}>
-            <Text style={{ fontSize: 34 }}>{emoji}</Text>
+            <CategoryGlyph icon={emoji} size={34} color={colors.primary} />
           </View>
           <Text style={styles.previewName}>{name.trim() || "Viagem"}</Text>
         </View>
@@ -87,17 +105,25 @@ export default function GrupoForm() {
           placeholder="Ex.: Algarve 2026, Fim de semana no Porto…"
         />
 
-        <Text style={styles.label}>Emoji</Text>
+        <Text style={styles.label}>Ícone</Text>
         <View style={styles.emojiGrid}>
-          {EMOJIS.map((e) => (
-            <Pressable
-              key={e}
-              onPress={() => setEmoji(e)}
-              style={[styles.emojiChip, emoji === e && styles.emojiChipActive]}
-            >
-              <Text style={{ fontSize: 22 }}>{e}</Text>
-            </Pressable>
-          ))}
+          {TRIP_ICONS.map((item) => {
+            const active = emoji === item.key;
+            return (
+              <Pressable
+                key={item.key}
+                onPress={() => setEmoji(item.key)}
+                style={[styles.emojiChip, active && styles.emojiChipActive]}
+              >
+                <HugeiconsIcon
+                  icon={item.icon as never}
+                  size={22}
+                  color={active ? colors.primary : colors.text}
+                  strokeWidth={2}
+                />
+              </Pressable>
+            );
+          })}
         </View>
 
         <Text style={styles.label}>Pessoas ({members.length})</Text>

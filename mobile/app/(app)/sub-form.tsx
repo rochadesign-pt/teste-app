@@ -9,11 +9,12 @@ import {
   View,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
+import { HugeiconsIcon } from "@hugeicons/react-native";
 import { api } from "@/lib/api";
 import { Button, Field } from "@/components/ui";
+import { CATEGORY_ICONS } from "@/lib/hugeicons";
 import { colors, fonts, radius, spacing } from "@/constants/theme";
 
-const ICONS = ["📺", "🎵", "🏋️", "☁️", "📱", "📰", "🎮", "🚗", "🏠", "💳"];
 const COLORS = [
   "#FF375F",
   "#34C759",
@@ -37,7 +38,7 @@ export default function SubForm() {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [day, setDay] = useState("");
-  const [icon, setIcon] = useState(ICONS[0]);
+  const [icon, setIcon] = useState(CATEGORY_ICONS[0].key);
   const [color, setColor] = useState(COLORS[0]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,24 +99,27 @@ export default function SubForm() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chips}
         >
-          {ICONS.map((ic, i) => {
-            const active = ic === icon;
+          {CATEGORY_ICONS.map((item, i) => {
+            const active = item.key === icon;
+            const c = COLORS[i % COLORS.length];
             return (
               <Pressable
-                key={ic}
+                key={item.key}
                 onPress={() => {
-                  setIcon(ic);
-                  setColor(COLORS[i]);
+                  setIcon(item.key);
+                  setColor(c);
                 }}
                 style={[
                   styles.iconChip,
-                  active && {
-                    backgroundColor: tint(COLORS[i], 0.16),
-                    borderColor: COLORS[i],
-                  },
+                  active && { backgroundColor: tint(color, 0.16), borderColor: color },
                 ]}
               >
-                <Text style={{ fontSize: 18 }}>{ic}</Text>
+                <HugeiconsIcon
+                  icon={item.icon as never}
+                  size={22}
+                  color={active ? color : colors.text}
+                  strokeWidth={2}
+                />
               </Pressable>
             );
           })}

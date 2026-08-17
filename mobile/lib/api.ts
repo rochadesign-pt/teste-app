@@ -207,7 +207,7 @@ async function flushCatOverrides() {
 export const api = {
   listSubscriptions: () =>
     apiFetch<{ subscriptions: Subscription[] }>("/subscriptions").then(
-      (r) => r.subscriptions,
+      (r) => r.subscriptions ?? [],
     ),
 
   createSubscription: (input: {
@@ -353,7 +353,7 @@ export const api = {
   },
 
   listGoals: () =>
-    apiFetch<{ goals: Goal[] }>("/goals").then((r) => r.goals),
+    apiFetch<{ goals: Goal[] }>("/goals").then((r) => r.goals ?? []),
 
   createGoal: (input: GoalInput) =>
     apiFetch<{ goal: Goal }>("/goals", {
@@ -450,7 +450,7 @@ export const api = {
   },
 
   listExpenses: () =>
-    apiFetch<{ expenses: Expense[] }>("/expenses").then((r) => r.expenses),
+    apiFetch<{ expenses: Expense[] }>("/expenses").then((r) => r.expenses ?? []),
 
   createExpense: (input: ExpenseInput) =>
     apiFetch<{ expense: Expense }>("/expenses", {
@@ -486,7 +486,7 @@ export const api = {
     const trip: Trip = {
       _id: localId(),
       name: input.name,
-      emoji: input.emoji ?? "🏖️",
+      emoji: input.emoji ?? "beach",
       currency: input.currency ?? "EUR",
       members: input.members,
       expenses: [],

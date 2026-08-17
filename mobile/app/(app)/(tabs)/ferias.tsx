@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { api, type Trip } from "@/lib/api";
 import { tripStats } from "@/lib/split";
+import { CategoryGlyph } from "@/components/CategoryGlyph";
 import { formatMoney } from "@/lib/format";
 import { colors, fonts, shadow, spacing } from "@/constants/theme";
 
@@ -55,7 +56,7 @@ export default function Ferias() {
             >
               <View style={styles.cardTop}>
                 <View style={styles.emojiWrap}>
-                  <Text style={styles.emoji}>{trip.emoji}</Text>
+                  <CategoryGlyph icon={trip.emoji} size={24} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardName} numberOfLines={1}>
@@ -89,7 +90,9 @@ export default function Ferias() {
 
         {loaded && trips.length === 0 && (
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🏖️</Text>
+            <View style={styles.emptyIcon}>
+              <CategoryGlyph icon="beach" size={30} color={colors.primary} />
+            </View>
             <Text style={styles.emptyTitle}>Ainda sem viagens</Text>
             <Text style={styles.emptyText}>
               Cria um grupo, adiciona os amigos e regista as despesas. No fim,
@@ -184,7 +187,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   empty: { alignItems: "center", marginTop: spacing.xl * 1.5, paddingHorizontal: spacing.lg },
-  emptyEmoji: { fontSize: 44, marginBottom: spacing.sm },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.md,
+    ...shadow.card,
+  },
   emptyTitle: {
     color: colors.text,
     fontSize: 19,

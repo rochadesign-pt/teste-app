@@ -16,6 +16,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import Notification03Icon from "@hugeicons/core-free-icons/Notification03Icon";
 import Search01Icon from "@hugeicons/core-free-icons/Search01Icon";
+import Coins01Icon from "@hugeicons/core-free-icons/Coins01Icon";
+import PieChartIcon from "@hugeicons/core-free-icons/PieChartIcon";
+import Target02Icon from "@hugeicons/core-free-icons/Target02Icon";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   api,
@@ -32,6 +35,7 @@ import { Tappable } from "@/components/Tappable";
 import { FadeInUp } from "@/components/FadeInUp";
 import { Donut, Ring, Sparkline } from "@/components/charts";
 import { ProgressBar } from "@/components/ProgressBar";
+import { confirmDelete } from "@/lib/confirm";
 import { formatMoney } from "@/lib/format";
 import { usePullToRefresh } from "@/lib/usePullToRefresh";
 import { colors, fonts, radius, shadow, spacing } from "@/constants/theme";
@@ -110,11 +114,11 @@ export default function ExpensesScreen() {
             () => ({ monthlyIncome: 0, mealAllowance: 0 }) as Profile,
           ),
       ]);
-      setExpenses(exp);
-      setGoals(gls);
-      setSubs(sbs);
-      setIncome((prof.monthlyIncome || 0) + (prof.mealAllowance || 0));
-      setPhotoUrl(prof.photoUrl);
+      setExpenses(exp ?? []);
+      setGoals(gls ?? []);
+      setSubs(sbs ?? []);
+      setIncome((prof?.monthlyIncome || 0) + (prof?.mealAllowance || 0));
+      setPhotoUrl(prof?.photoUrl);
     } catch (err) {
       Alert.alert("Erro ao carregar", (err as Error).message);
     } finally {
@@ -344,22 +348,14 @@ export default function ExpensesScreen() {
     }
   };
 
-  const handleDelete = (item: Expense) => {
-    Alert.alert("Apagar despesa", `Apagar "${item.title}"?`, [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Apagar",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.deleteExpense(item._id);
-            setExpenses((p) => p.filter((e) => e._id !== item._id));
-          } catch (err) {
-            Alert.alert("Erro", (err as Error).message);
-          }
-        },
-      },
-    ]);
+  const handleDelete = async (item: Expense) => {
+    if (!(await confirmDelete("Apagar despesa", `Apagar "${item.title}"?`))) return;
+    try {
+      await api.deleteExpense(item._id);
+      setExpenses((p) => p.filter((e) => e._id !== item._id));
+    } catch (err) {
+      Alert.alert("Erro", (err as Error).message);
+    }
   };
 
   return (
@@ -553,27 +549,27 @@ export default function ExpensesScreen() {
                 </View>
                 <View style={styles.analiseRows}>
                   {insights.hasIncome ? (
-                    <Text style={styles.analiseRow}>
-                      💰 Saldo do mês: {formatMoney(insights.balance)} de{" "}
+                    <AnaliseRow icon={Coins01Icon}>
+                      Saldo do mês: {formatMoney(insights.balance)} de{" "}
                       {formatMoney(income)} · poupas{" "}
                       {Math.round(insights.savingsRate * 100)}%
-                    </Text>
+                    </AnaliseRow>
                   ) : (
                     <Pressable onPress={() => router.push("/(app)/rendimento")}>
-                      <Text style={[styles.analiseRow, styles.analiseCta]}>
-                        💰 Define o teu rendimento para veres quanto poupas →
-                      </Text>
+                      <AnaliseRow icon={Coins01Icon} cta>
+                        Define o teu rendimento para veres quanto poupas →
+                      </AnaliseRow>
                     </Pressable>
                   )}
                   {insights.biggestCat && (
-                    <Text style={styles.analiseRow}>
-                      📊 Onde mais gastas: {insights.biggestCat.name} ·{" "}
+                    <AnaliseRow icon={PieChartIcon}>
+                      Onde mais gastas: {insights.biggestCat.name} ·{" "}
                       {formatMoney(insights.biggestCat.spent)}
-                    </Text>
+                    </AnaliseRow>
                   )}
-                  <Text style={styles.analiseRow}>
-                    🎯 Projeção fim do mês: ~{formatMoney(insights.projection)}
-                  </Text>
+                  <AnaliseRow icon={Target02Icon}>
+                    Projeção fim do mês: ~{formatMoney(insights.projection)}
+                  </AnaliseRow>
                 </View>
               </View>
             )}
@@ -897,7 +893,11 @@ export default function ExpensesScreen() {
                             { backgroundColor: tint(s.color ?? "#6366F1", 0.16) },
                           ]}
                         >
-                          <Text style={{ fontSize: 15 }}>{s.icon ?? "💳"}</Text>
+                          <CategoryGlyph
+                            icon={s.icon}
+                            size={17}
+                            color={s.color ?? colors.primary}
+                          />
                         </View>
                         <Text style={styles.recurName} numberOfLines={1}>
                           {s.name}
@@ -1019,6 +1019,30 @@ function ActionBtn({
         </Text>
       </View>
     </Tappable>
+  );
+}
+
+function AnaliseRow({
+  icon,
+  children,
+  cta,
+}: {
+  icon: unknown;
+  children: ReactNode;
+  cta?: boolean;
+}) {
+  return (
+    <View style={styles.aRow}>
+      <HugeiconsIcon
+        icon={icon as never}
+        size={16}
+        color={cta ? colors.primary : colors.textMuted}
+        strokeWidth={2}
+      />
+      <Text style={[styles.analiseRow, { flex: 1 }, cta && styles.analiseCta]}>
+        {children}
+      </Text>
+    </View>
   );
 }
 
@@ -1347,7 +1371,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 3,
   },
-  analiseRows: { marginTop: spacing.md, gap: 6 },
+  analiseRows: { marginTop: spacing.md, gap: 8 },
+  aRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
   analiseRow: {
     color: colors.textMuted,
     fontSize: 14,

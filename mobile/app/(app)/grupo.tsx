@@ -4,6 +4,8 @@ import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-rou
 import { Ionicons } from "@expo/vector-icons";
 import { api, type Trip } from "@/lib/api";
 import { tripStats } from "@/lib/split";
+import { CategoryGlyph } from "@/components/CategoryGlyph";
+import { confirmDelete } from "@/lib/confirm";
 import { formatMoney } from "@/lib/format";
 import { colors, fonts, shadow, spacing } from "@/constants/theme";
 
@@ -30,18 +32,11 @@ export default function Grupo() {
   const nameOf = (mid: string) =>
     trip.members.find((m) => m.id === mid)?.name ?? "—";
 
-  const removeExpense = (expenseId: string, desc: string) => {
-    Alert.alert("Apagar despesa", `Apagar "${desc}"?`, [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Apagar",
-        style: "destructive",
-        onPress: async () => {
-          await api.deleteTripExpense(trip._id, expenseId);
-          load();
-        },
-      },
-    ]);
+  const removeExpense = async (expenseId: string, desc: string) => {
+    if (await confirmDelete("Apagar despesa", `Apagar "${desc}"?`)) {
+      await api.deleteTripExpense(trip._id, expenseId);
+      load();
+    }
   };
 
   const markPaid = async (
@@ -98,18 +93,11 @@ export default function Grupo() {
     }
   };
 
-  const removeTrip = () => {
-    Alert.alert("Apagar viagem", `Apagar "${trip.name}" e todas as despesas?`, [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Apagar",
-        style: "destructive",
-        onPress: async () => {
-          await api.deleteTrip(trip._id);
-          router.back();
-        },
-      },
-    ]);
+  const removeTrip = async () => {
+    if (await confirmDelete("Apagar viagem", `Apagar "${trip.name}" e todas as despesas?`)) {
+      await api.deleteTrip(trip._id);
+      router.back();
+    }
   };
 
   return (
@@ -133,7 +121,7 @@ export default function Grupo() {
         {/* Resumo */}
         <View style={styles.hero}>
           <View style={styles.emojiWrap}>
-            <Text style={{ fontSize: 30 }}>{trip.emoji}</Text>
+            <CategoryGlyph icon={trip.emoji} size={30} color={colors.primary} />
           </View>
           <Text style={styles.total}>{formatMoney(s.total, trip.currency)}</Text>
           <Text style={styles.totalSub}>
