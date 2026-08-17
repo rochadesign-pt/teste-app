@@ -1,15 +1,10 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import type { Goal } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { CategoryGlyph } from "./CategoryGlyph";
 import { ProgressBar } from "./ProgressBar";
-import { colors, fonts } from "@/constants/theme";
+import { colors, fonts, shadow } from "@/constants/theme";
 
-function tint(hex: string, a: number) {
-  const n = parseInt((hex || "#6366F1").replace("#", ""), 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
 function lighten(hex: string, a = 0.5) {
   const n = parseInt((hex || "#6366F1").replace("#", ""), 16);
   const mix = (c: number) => Math.round(c + (255 - c) * a);
@@ -26,38 +21,31 @@ export function GoalCard({ goal, onPress }: { goal: Goal; onPress: () => void })
   const pct = goal.target > 0 ? Math.min(1, goal.saved / goal.target) : 0;
   const left = Math.max(0, goal.target - goal.saved);
   return (
-    <Pressable onPress={onPress}>
-      <LinearGradient
-        colors={[tint(color, 0.22), tint(color, 0.06)]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.card, { borderColor: tint(color, 0.35) }]}
-      >
-        <View style={styles.head}>
-          <View style={[styles.icon, { backgroundColor: color }]}>
-            <CategoryGlyph icon={goal.icon} size={20} color={iconColorFor(color)} />
-          </View>
-          <Text style={styles.name} numberOfLines={1}>
-            {goal.name}
-          </Text>
+    <Pressable onPress={onPress} style={styles.card}>
+      <View style={styles.head}>
+        <View style={[styles.icon, { backgroundColor: color }]}>
+          <CategoryGlyph icon={goal.icon} size={20} color={iconColorFor(color)} />
         </View>
-
-        <Text style={styles.saved} numberOfLines={1}>
-          {formatMoney(goal.saved)}
+        <Text style={styles.name} numberOfLines={1}>
+          {goal.name}
         </Text>
-        <Text style={styles.target}>de {formatMoney(goal.target)}</Text>
+      </View>
 
-        <View style={styles.bar}>
-          <ProgressBar progress={pct} from={lighten(color)} to={color} height={7} />
-        </View>
+      <Text style={styles.saved} numberOfLines={1}>
+        {formatMoney(goal.saved)}
+      </Text>
+      <Text style={styles.target}>de {formatMoney(goal.target)}</Text>
 
-        <View style={styles.foot}>
-          <Text style={styles.footTxt}>{Math.round(pct * 100)}%</Text>
-          <Text style={styles.footTxt}>
-            {left <= 0 ? "concluído 🎉" : `faltam ${formatMoney(left)}`}
-          </Text>
-        </View>
-      </LinearGradient>
+      <View style={styles.bar}>
+        <ProgressBar progress={pct} from={lighten(color)} to={color} height={7} />
+      </View>
+
+      <View style={styles.foot}>
+        <Text style={styles.footTxt}>{Math.round(pct * 100)}%</Text>
+        <Text style={styles.footTxt}>
+          {left <= 0 ? "concluído 🎉" : `faltam ${formatMoney(left)}`}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -65,10 +53,11 @@ export function GoalCard({ goal, onPress }: { goal: Goal; onPress: () => void })
 const styles = StyleSheet.create({
   card: {
     width: 210,
-    borderRadius: 19,
-    borderWidth: 1,
+    borderRadius: 20,
     padding: 16,
     overflow: "hidden",
+    backgroundColor: colors.surface,
+    ...shadow.card,
   },
   head: { flexDirection: "row", alignItems: "center", gap: 10 },
   icon: {
@@ -80,26 +69,26 @@ const styles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    color: "#F5F5F7",
+    color: colors.text,
     fontSize: 15,
     fontWeight: "500",
     fontFamily: fonts.sans,
     letterSpacing: -0.2,
   },
   saved: {
-    color: "#F5F5F7",
+    color: colors.text,
     fontSize: 21,
-    fontWeight: "500",
+    fontWeight: "600",
     fontFamily: fonts.sans,
     letterSpacing: -0.6,
     marginTop: 14,
   },
-  target: { color: "rgba(245,245,247,0.6)", fontSize: 13, fontFamily: fonts.sans },
+  target: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans },
   bar: { marginTop: 14 },
   foot: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 8,
   },
-  footTxt: { color: "rgba(245,245,247,0.6)", fontSize: 12.5, fontFamily: fonts.sans },
+  footTxt: { color: colors.textMuted, fontSize: 12.5, fontFamily: fonts.sans },
 });

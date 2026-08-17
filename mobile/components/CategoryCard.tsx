@@ -53,20 +53,20 @@ const styles = StyleSheet.create({
   },
   top: { gap: 12 },
   name: {
-    color: "#F5F5F7",
+    color: colors.text,
     fontSize: 14,
     fontFamily: fonts.sans,
     letterSpacing: -0.21,
   },
   spent: {
-    color: "#F5F5F7",
+    color: colors.text,
     fontSize: 18,
     fontWeight: "500",
     fontFamily: fonts.sans,
     letterSpacing: -0.72,
   },
   budget: {
-    color: "rgba(245,245,247,0.6)",
+    color: colors.textMuted,
     fontSize: 18,
     fontFamily: fonts.sans,
     letterSpacing: -0.72,

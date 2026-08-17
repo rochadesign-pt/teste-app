@@ -1,26 +1,46 @@
 export const colors = {
-  // Base neutra quase preta (estilo da referência).
-  bg: "#0A0A0B",
-  surface: "#161618",
-  surfaceAlt: "#202023",
-  border: "#2A2A2E",
-  text: "#F5F5F7",
-  textMuted: "#8E8E93",
-  primary: "#6366F1",
+  // Tema claro (estilo fintech da referência): fundo cinza muito claro,
+  // cards brancos, texto quase preto, acento azul e botões pretos.
+  bg: "#F1F3F6",
+  surface: "#FFFFFF",
+  surfaceAlt: "#F3F5F8",
+  border: "#E7EAEF",
+  text: "#0E0F13",
+  textMuted: "#8A909B",
+  primary: "#2F6BF6", // acento azul (links, estados ativos)
   primaryText: "#FFFFFF",
-  danger: "#FF453A",
-  success: "#34C759",
-  lime: "#A3E635",
+  ink: "#0E0F13", // botões pretos em pílula
+  danger: "#EF4444",
+  success: "#22C55E",
+  lime: "#A3E635", // mantido por compatibilidade; não usado no tema claro
 
-  // Cores de acento por categoria (vivas, estilo iOS).
+  // Cores de acento por categoria (vivas).
   accents: {
-    orange: "#FF9500",
-    green: "#34C759",
-    blue: "#0A84FF",
-    purple: "#8B5CF6",
+    orange: "#FF9F0A",
+    green: "#22C55E",
+    blue: "#2F6BF6",
+    purple: "#7C5CFF",
     pink: "#FF375F",
-    yellow: "#FFD60A",
-    teal: "#40C8E0",
+    yellow: "#FFCC00",
+    teal: "#30C7D6",
+  },
+};
+
+// Sombras suaves reutilizáveis (web → boxShadow; nativo → elevation).
+export const shadow = {
+  card: {
+    shadowColor: "#0B1220",
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  soft: {
+    shadowColor: "#0B1220",
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
 };
 
@@ -39,8 +59,8 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: 8,
-  md: 12,
+  sm: 10,
+  md: 14,
   lg: 20,
-  xl: 24,
+  xl: 26,
 };

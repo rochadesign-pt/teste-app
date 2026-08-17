@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -28,15 +28,12 @@ import { Avatar } from "@/components/Avatar";
 import { CategoryCard, type CategoryCardData } from "@/components/CategoryCard";
 import { CategoryGlyph } from "@/components/CategoryGlyph";
 import { GoalCard } from "@/components/GoalCard";
-import { GlassCard } from "@/components/GlassCard";
-import { GradientStatCard } from "@/components/GradientStatCard";
 import { Tappable } from "@/components/Tappable";
 import { FadeInUp } from "@/components/FadeInUp";
-import { Aura } from "@/components/Aura";
 import { Ring, Sparkline } from "@/components/charts";
 import { formatMoney } from "@/lib/format";
 import { usePullToRefresh } from "@/lib/usePullToRefresh";
-import { colors, fonts, radius, spacing } from "@/constants/theme";
+import { colors, fonts, radius, shadow, spacing } from "@/constants/theme";
 
 function tint(hex: string, a: number) {
   const n = parseInt(hex.replace("#", ""), 16);
@@ -335,7 +332,6 @@ export default function ExpensesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <Aura />
       <View style={styles.topbar}>
         <View style={styles.navLeft}>
           <Avatar uri={photoUrl} name={name} size={46} onChange={onPhoto} />
@@ -400,7 +396,7 @@ export default function ExpensesScreen() {
           <View>
             {/* Wallet card */}
             <FadeInUp delay={40}>
-            {/* Hero — sem container, centrado */}
+            {/* Hero — sem container */}
             <View style={styles.hero}>
               <View style={styles.heroLabelRow}>
                 <Text style={styles.heroLabel}>Total gasto · {pd.label}</Text>
@@ -412,19 +408,35 @@ export default function ExpensesScreen() {
                   />
                 </Pressable>
               </View>
-              <Text style={styles.heroAmount} numberOfLines={1} adjustsFontSizeToFit>
-                {hidden ? "••••• €" : formatMoney(pd.total)}
-              </Text>
-              {pd.hasPrev && !hidden && (
-                <Text style={styles.heroDelta}>
-                  <Text
-                    style={{ color: pd.delta >= 0 ? "#FF7A6B" : colors.success }}
-                  >
-                    {pd.delta >= 0 ? "↑" : "↓"}
-                  </Text>{" "}
-                  {formatMoney(Math.abs(pd.delta))} vs período anterior
+              <View style={styles.heroAmountRow}>
+                <Text
+                  style={styles.heroAmount}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {hidden ? "••••• €" : formatMoney(pd.total)}
                 </Text>
-              )}
+                {pd.hasPrev && !hidden && (
+                  <View
+                    style={[
+                      styles.deltaPill,
+                      {
+                        backgroundColor:
+                          pd.delta >= 0 ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.14)",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.deltaPillTxt,
+                        { color: pd.delta >= 0 ? colors.danger : colors.success },
+                      ]}
+                    >
+                      {pd.delta >= 0 ? "↑" : "↓"} {formatMoney(Math.abs(pd.delta))}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
 
             {/* Chart — largura total, a fundir com o fundo (sem container) */}
@@ -434,8 +446,8 @@ export default function ExpensesScreen() {
                   values={pd.series}
                   width={width}
                   height={128}
-                  from="#E8E8EA"
-                  to="#FFFFFF"
+                  from="#7AA2FF"
+                  to="#2F6BF6"
                   projection={
                     period === "month" ? insights.projection : undefined
                   }
@@ -485,8 +497,8 @@ export default function ExpensesScreen() {
                             ? Math.min(1, monthTotal / income)
                             : 0
                       }
-                      color={colors.lime}
-                      track="rgba(255,255,255,0.1)"
+                      color={colors.primary}
+                      track={colors.surfaceAlt}
                       glow={false}
                     />
                     <View style={styles.analiseRingCenter}>
@@ -559,16 +571,14 @@ export default function ExpensesScreen() {
             <FadeInUp delay={110}>
             <Text style={styles.gridTitle}>Para onde vai o teu dinheiro</Text>
             <View style={styles.grid}>
-              <GradientStatCard
+              <StatCard
                 color={
                   totalBudget > 0 && budgetLeft < 0
                     ? colors.danger
                     : colors.accents.green
                 }
-                style={styles.gridCard}
-                contentStyle={styles.gridInner}
+                label="Orçamento"
               >
-                <Text style={styles.gridLabel}>Orçamento</Text>
                 {totalBudget > 0 ? (
                   <>
                     <View style={styles.gridRingRow}>
@@ -583,6 +593,7 @@ export default function ExpensesScreen() {
                               ? colors.accents.orange
                               : colors.success
                         }
+                        track={colors.surfaceAlt}
                         glow={false}
                       />
                       <Text style={styles.gridValue}>
@@ -601,39 +612,24 @@ export default function ExpensesScreen() {
                     <Text style={styles.gridSub}>Sem orçamento</Text>
                   </>
                 )}
-              </GradientStatCard>
+              </StatCard>
 
-              <GradientStatCard
-                color={colors.accents.blue}
-                style={styles.gridCard}
-                contentStyle={styles.gridInner}
-              >
-                <Text style={styles.gridLabel}>Média / {pd.avgUnit}</Text>
+              <StatCard color={colors.accents.blue} label={`Média / ${pd.avgUnit}`}>
                 <Text style={styles.gridValue}>{formatMoney(pd.avg)}</Text>
                 <Text style={styles.gridSub}>neste período</Text>
-              </GradientStatCard>
+              </StatCard>
 
-              <GradientStatCard
-                color={colors.accents.purple}
-                style={styles.gridCard}
-                contentStyle={styles.gridInner}
-              >
-                <Text style={styles.gridLabel}>Recorrências</Text>
+              <StatCard color={colors.accents.purple} label="Recorrências">
                 <Text style={styles.gridValue}>{formatMoney(subsMonthly)}</Text>
                 <Text style={styles.gridSub}>por mês</Text>
-              </GradientStatCard>
+              </StatCard>
 
-              <GradientStatCard
-                color={colors.accents.orange}
-                style={styles.gridCard}
-                contentStyle={styles.gridInner}
-              >
-                <Text style={styles.gridLabel}>Poupança</Text>
+              <StatCard color={colors.accents.orange} label="Poupança">
                 <Text style={styles.gridValue}>{formatMoney(totalSaved)}</Text>
                 <Text style={styles.gridSub}>
                   {goals.length} {goals.length === 1 ? "objetivo" : "objetivos"}
                 </Text>
-              </GradientStatCard>
+              </StatCard>
             </View>
             </FadeInUp>
 
@@ -708,7 +704,7 @@ export default function ExpensesScreen() {
                 </Pressable>
               </View>
               {subs.length > 0 ? (
-                <GlassCard style={styles.recurCard} contentStyle={styles.recurInner}>
+                <View style={[styles.recurCard, styles.lightCard]}>
                   <Text style={styles.recurTotalLabel}>Total mensal</Text>
                   <Text style={styles.recurTotal}>{formatMoney(subsMonthly)}</Text>
                   <Text style={styles.recurYear}>
@@ -738,7 +734,7 @@ export default function ExpensesScreen() {
                       </View>
                     ))}
                   </View>
-                </GlassCard>
+                </View>
               ) : (
                 <Pressable
                   style={styles.emptyGoal}
@@ -797,7 +793,7 @@ export default function ExpensesScreen() {
               })
             }
           >
-            <GlassCard r={radius.md} contentStyle={styles.row}>
+            <View style={[styles.row, styles.lightCard]}>
               <View
                 style={[
                   styles.badge,
@@ -819,7 +815,7 @@ export default function ExpensesScreen() {
               <Text style={styles.rowAmount}>
                 {formatMoney(item.amount, item.currency)}
               </Text>
-            </GlassCard>
+            </View>
           </Tappable>
         )}
       />
@@ -842,12 +838,32 @@ function ActionBtn({
   return (
     <Tappable style={{ flex: 1 }} scaleTo={0.95} onPress={onPress}>
       <View style={[styles.actionBtn, primary && styles.actionBtnPrimary]}>
-        <Ionicons name={icon} size={18} color={primary ? "#0A0A0B" : colors.text} />
-        <Text style={[styles.actionTxt, primary && { color: "#0A0A0B" }]}>
+        <Ionicons name={icon} size={18} color={primary ? "#FFFFFF" : colors.text} />
+        <Text style={[styles.actionTxt, primary && { color: "#FFFFFF" }]}>
           {label}
         </Text>
       </View>
     </Tappable>
+  );
+}
+
+function StatCard({
+  color,
+  label,
+  children,
+}: {
+  color: string;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <View style={[styles.gridCard, styles.statCard]}>
+      <View style={styles.statHead}>
+        <View style={[styles.statDot, { backgroundColor: color }]} />
+        <Text style={styles.gridLabel}>{label}</Text>
+      </View>
+      {children}
+    </View>
   );
 }
 
@@ -878,18 +894,17 @@ const styles = StyleSheet.create({
   walletChart: { marginTop: spacing.md, marginHorizontal: -2, alignItems: "center" },
   segmented: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 999,
-    padding: 3,
-    marginTop: spacing.md,
+    padding: 4,
   },
   segBtn: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: 999,
     alignItems: "center",
   },
-  segBtnActive: { backgroundColor: "rgba(255,255,255,0.14)" },
+  segBtnActive: { backgroundColor: colors.surface, ...shadow.soft },
   segTxt: {
     color: colors.textMuted,
     fontSize: 13,
@@ -908,13 +923,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 7,
-    paddingVertical: 13,
-    borderRadius: radius.md,
+    paddingVertical: 15,
+    borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadow.soft,
   },
-  actionBtnPrimary: { backgroundColor: "#FFFFFF", borderColor: "#FFFFFF" },
+  actionBtnPrimary: { backgroundColor: colors.ink, borderColor: colors.ink },
   actionTxt: {
     color: colors.text,
     fontSize: 14,
@@ -935,11 +951,12 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
+    ...shadow.soft,
   },
   brand: {
     color: colors.text,
@@ -1013,21 +1030,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   gridCard: { flexGrow: 1, flexBasis: "47%" },
+  statCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    padding: spacing.md,
+    gap: 6,
+    minHeight: 96,
+    ...shadow.card,
+  },
+  statHead: { flexDirection: "row", alignItems: "center", gap: 7 },
+  statDot: { width: 8, height: 8, borderRadius: 999 },
   gridInner: { padding: spacing.md, gap: 4, minHeight: 92 },
   gridLabel: {
-    color: "rgba(235,235,245,0.72)",
+    color: colors.textMuted,
     fontSize: 13,
     fontFamily: fonts.sans,
   },
   gridValue: {
     color: colors.text,
     fontSize: 22,
-    fontWeight: "500",
+    fontWeight: "600",
     fontFamily: fonts.sans,
     letterSpacing: -0.5,
   },
   gridSub: {
-    color: "rgba(235,235,245,0.55)",
+    color: colors.textMuted,
     fontSize: 12.5,
     fontFamily: fonts.sans,
   },
@@ -1035,12 +1062,11 @@ const styles = StyleSheet.create({
   analise: {
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,
-    borderRadius: 19,
+    borderRadius: 22,
     padding: spacing.lg,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderWidth: 0.5,
-    borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: colors.surface,
     overflow: "hidden",
+    ...shadow.card,
   },
   analiseTop: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   analiseRing: { width: 64, height: 64, alignItems: "center", justifyContent: "center" },
@@ -1058,7 +1084,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
   },
   analiseLabel: {
-    color: colors.lime,
+    color: colors.primary,
     fontSize: 12.5,
     fontWeight: "600",
     fontFamily: fonts.sans,
@@ -1081,7 +1107,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   analiseCta: {
-    color: colors.lime,
+    color: colors.primary,
     fontWeight: "600",
     textDecorationLine: "underline",
   },
@@ -1094,26 +1120,35 @@ const styles = StyleSheet.create({
   },
   list: { paddingBottom: 150, gap: spacing.sm },
 
-  hero: { alignItems: "center", paddingTop: spacing.xl, paddingHorizontal: spacing.lg },
+  hero: { paddingTop: spacing.lg, paddingHorizontal: spacing.lg },
   heroLabelRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   heroLabel: { color: colors.textMuted, fontSize: 15, fontFamily: fonts.sans },
+  heroAmountRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 12,
+    marginTop: spacing.xs,
+  },
   heroAmount: {
     color: colors.text,
-    fontSize: 56,
-    fontWeight: "500",
+    fontSize: 52,
+    fontWeight: "600",
     fontFamily: fonts.sans,
     letterSpacing: -2,
-    marginTop: spacing.sm,
-    textAlign: "center",
   },
-  heroDelta: {
-    color: colors.textMuted,
-    fontSize: 14.5,
+  deltaPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    marginBottom: 8,
+  },
+  deltaPillTxt: {
+    fontSize: 13,
+    fontWeight: "600",
     fontFamily: fonts.sans,
-    marginTop: 8,
   },
   chartWrap: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     marginBottom: spacing.xs,
     alignItems: "center",
   },
@@ -1216,6 +1251,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
 
+  lightCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    padding: spacing.md,
+    ...shadow.card,
+  },
   rowWrap: { marginHorizontal: spacing.lg },
   row: {
     flexDirection: "row",

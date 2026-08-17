@@ -50,7 +50,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   icon={icon as any}
                   size={24}
-                  color={focused ? "#0A0A0B" : colors.textMuted}
+                  color={focused ? "#FFFFFF" : colors.textMuted}
                   strokeWidth={2}
                 />
               </View>
@@ -77,14 +77,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 66,
     borderRadius: 999,
-    backgroundColor: "rgba(20,20,22,0.92)",
+    backgroundColor: "rgba(255,255,255,0.96)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(14,15,19,0.06)",
     // Sombra para "flutuar".
-    shadowColor: "#000",
-    shadowOpacity: 0.45,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
+    shadowColor: "#0B1220",
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 14 },
     elevation: 12,
     ...Platform.select({
       web: { backdropFilter: "blur(20px)" } as object,
@@ -104,6 +104,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   iconActive: {
-    backgroundColor: colors.lime,
+    backgroundColor: colors.ink,
   },
 });

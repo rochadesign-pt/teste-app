@@ -22,13 +22,13 @@ export function Button({
 }) {
   const bg =
     variant === "primary"
-      ? "#FFFFFF"
+      ? colors.ink
       : variant === "danger"
         ? colors.danger
-        : "transparent";
+        : colors.surface;
   const fg =
     variant === "primary"
-      ? "#0A0A0B"
+      ? "#FFFFFF"
       : variant === "danger"
         ? "#FFFFFF"
         : colors.text;
@@ -69,8 +69,8 @@ export function Field({
 
 const styles = StyleSheet.create({
   button: {
-    height: 52,
-    borderRadius: radius.md,
+    height: 54,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: spacing.lg,
