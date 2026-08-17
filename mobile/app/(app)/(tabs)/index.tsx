@@ -48,6 +48,27 @@ function isoLocal(d: Date) {
 function monthKeyOf(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
+// Próximo débito de uma recorrência a partir do dia do mês.
+function nextDueInfo(dueDay: number, now: Date) {
+  const today = now.getDate();
+  let month = now.getMonth();
+  let year = now.getFullYear();
+  if (dueDay < today) {
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+  }
+  const dim = new Date(year, month + 1, 0).getDate();
+  const day = Math.min(dueDay, dim);
+  const date = new Date(year, month, day);
+  const base = new Date(now.getFullYear(), now.getMonth(), today);
+  const days = Math.round((date.getTime() - base.getTime()) / 86400000);
+  const label = days <= 0 ? "hoje" : days === 1 ? "amanhã" : `em ${days} dias`;
+  return { day, days, label };
+}
+
 function monthLabel(key: string) {
   const [y, m] = key.split("-").map(Number);
   const name = new Intl.DateTimeFormat("pt-PT", { month: "long" }).format(
@@ -184,6 +205,16 @@ export default function ExpensesScreen() {
   const subsMonthly = useMemo(
     () => subs.reduce((s, x) => s + (x.amount || 0), 0),
     [subs],
+  );
+  // Contas a pagar (C): recorrências com dia de débito, ordenadas por proximidade.
+  const upcoming = useMemo(
+    () =>
+      subs
+        .filter((s) => typeof s.dueDay === "number" && s.dueDay! >= 1)
+        .map((s) => ({ sub: s, due: nextDueInfo(s.dueDay as number, now) }))
+        .sort((a, b) => a.due.days - b.due.days)
+        .slice(0, 4),
+    [subs, now],
   );
   const totalSaved = useMemo(
     () => goals.reduce((s, g) => s + (g.saved || 0), 0),
@@ -745,6 +776,53 @@ export default function ExpensesScreen() {
               </View>
             )}
 
+            {/* Contas a pagar (C) */}
+            {upcoming.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.secHead}>
+                  <Text style={styles.secTitle}>Contas a pagar</Text>
+                  <Pressable onPress={() => router.push("/(app)/sub-form")}>
+                    <Text style={styles.secLink}>+ Nova</Text>
+                  </Pressable>
+                </View>
+                <View style={styles.budgetList}>
+                  {upcoming.map(({ sub, due }, i) => (
+                    <View
+                      key={sub._id}
+                      style={[styles.dueRow, i > 0 && styles.budgetDivider]}
+                    >
+                      <View
+                        style={[
+                          styles.dueIcon,
+                          { backgroundColor: tint(sub.color ?? "#6366F1", 0.16) },
+                        ]}
+                      >
+                        <CategoryGlyph
+                          icon={sub.icon}
+                          size={18}
+                          color={sub.color ?? colors.primary}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.dueName} numberOfLines={1}>
+                          {sub.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.dueWhen,
+                            due.days <= 3 && { color: colors.danger },
+                          ]}
+                        >
+                          dia {due.day} · {due.label}
+                        </Text>
+                      </View>
+                      <Text style={styles.dueAmt}>{formatMoney(sub.amount)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
             {/* Objetivos */}
             <View style={styles.section}>
               <View style={styles.secHead}>
@@ -1217,6 +1295,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
   },
   budgetOf: { color: colors.textMuted, fontWeight: "400" },
+  // Contas a pagar (C)
+  dueRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
+  dueIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dueName: { color: colors.text, fontSize: 15, fontWeight: "500", fontFamily: fonts.sans },
+  dueWhen: { color: colors.textMuted, fontSize: 12.5, fontFamily: fonts.sans, marginTop: 1 },
+  dueAmt: { color: colors.text, fontSize: 15, fontWeight: "600", fontFamily: fonts.sans },
   analise: {
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,

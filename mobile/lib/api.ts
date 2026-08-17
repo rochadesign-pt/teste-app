@@ -104,6 +104,7 @@ export type Subscription = {
   amount: number;
   icon?: string;
   color?: string;
+  dueDay?: number; // dia do mês em que é debitada (1-31)
 };
 
 export type Investment = {
@@ -145,6 +146,12 @@ export type TripExpense = {
   split: string[]; // ids dos membros que partilham (divisão igual)
   date: string;
 };
+export type TripPayment = {
+  id: string;
+  from: string; // id do membro que pagou o acerto
+  to: string; // id do membro que recebeu
+  amount: number;
+};
 export type Trip = {
   _id: string;
   name: string;
@@ -152,6 +159,7 @@ export type Trip = {
   currency: string;
   members: TripMember[];
   expenses: TripExpense[];
+  payments?: TripPayment[]; // acertos já feitos entre membros
   createdAt: string;
 };
 
@@ -207,6 +215,7 @@ export const api = {
     amount: number;
     icon?: string;
     color?: string;
+    dueDay?: number;
   }) =>
     apiFetch<{ subscription: Subscription }>("/subscriptions", {
       method: "POST",
@@ -521,6 +530,31 @@ export const api = {
     const next = list.map((t) =>
       t._id === tripId
         ? { ...t, expenses: t.expenses.filter((e) => e.id !== expenseId) }
+        : t,
+    );
+    await localSet("trips", next);
+  },
+
+  addTripPayment: async (
+    tripId: string,
+    input: Omit<TripPayment, "id">,
+  ) => {
+    const list = await localGet<Trip[]>("trips", []);
+    const pay: TripPayment = { id: localId(), ...input };
+    const next = list.map((t) =>
+      t._id === tripId
+        ? { ...t, payments: [...(t.payments ?? []), pay] }
+        : t,
+    );
+    await localSet("trips", next);
+    return pay;
+  },
+
+  deleteTripPayment: async (tripId: string, paymentId: string) => {
+    const list = await localGet<Trip[]>("trips", []);
+    const next = list.map((t) =>
+      t._id === tripId
+        ? { ...t, payments: (t.payments ?? []).filter((p) => p.id !== paymentId) }
         : t,
     );
     await localSet("trips", next);

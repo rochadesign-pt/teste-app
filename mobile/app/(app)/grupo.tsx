@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api, type Trip } from "@/lib/api";
@@ -44,6 +44,60 @@ export default function Grupo() {
     ]);
   };
 
+  const markPaid = async (
+    from: { id: string; name: string },
+    to: { id: string; name: string },
+    amount: number,
+  ) => {
+    await api.addTripPayment(trip._id, { from: from.id, to: to.id, amount });
+    load();
+  };
+
+  const undoPayment = async (pid: string) => {
+    await api.deleteTripPayment(trip._id, pid);
+    load();
+  };
+
+  const shareSummary = async () => {
+    const cur = trip.currency;
+    const lines = [
+      `✦ ${trip.name} — ${formatMoney(s.total, cur)} (${formatMoney(s.perHead, cur)} por pessoa)`,
+      "",
+      "Saldos:",
+      ...s.balances.map(
+        (b) =>
+          `• ${b.member.name}: ${
+            b.net > 0.01
+              ? `recebe ${formatMoney(b.net, cur)}`
+              : b.net < -0.01
+                ? `deve ${formatMoney(-b.net, cur)}`
+                : "acertado"
+          }`,
+      ),
+    ];
+    if (s.settlements.length) {
+      lines.push("", "Acertar contas:");
+      s.settlements.forEach((st) =>
+        lines.push(`• ${st.from.name} paga ${formatMoney(st.amount, cur)} a ${st.to.name}`),
+      );
+    } else {
+      lines.push("", "✅ Está tudo acertado!");
+    }
+    const message = lines.join("\n");
+    try {
+      await Share.share({ message });
+    } catch {
+      try {
+        await (navigator as unknown as { clipboard: { writeText: (t: string) => Promise<void> } }).clipboard.writeText(
+          message,
+        );
+        Alert.alert("Copiado", "Resumo copiado para a área de transferência.");
+      } catch {
+        /* sem partilha disponível */
+      }
+    }
+  };
+
   const removeTrip = () => {
     Alert.alert("Apagar viagem", `Apagar "${trip.name}" e todas as despesas?`, [
       { text: "Cancelar", style: "cancel" },
@@ -64,9 +118,14 @@ export default function Grupo() {
         options={{
           title: trip.name,
           headerRight: () => (
-            <Pressable onPress={removeTrip} hitSlop={8}>
-              <Ionicons name="trash-outline" size={20} color={colors.danger} />
-            </Pressable>
+            <View style={{ flexDirection: "row", gap: 18 }}>
+              <Pressable onPress={shareSummary} hitSlop={8}>
+                <Ionicons name="share-outline" size={20} color={colors.text} />
+              </Pressable>
+              <Pressable onPress={removeTrip} hitSlop={8}>
+                <Ionicons name="trash-outline" size={20} color={colors.danger} />
+              </Pressable>
+            </View>
           ),
         }}
       />
@@ -126,7 +185,7 @@ export default function Grupo() {
         </View>
 
         {/* Acertar contas */}
-        {s.settlements.length > 0 && (
+        {s.settlements.length > 0 ? (
           <>
             <Text style={styles.sectionTitle}>Acertar contas</Text>
             <View style={styles.card}>
@@ -135,15 +194,57 @@ export default function Grupo() {
                   key={`${st.from.id}-${st.to.id}`}
                   style={[styles.settleRow, i > 0 && styles.divider]}
                 >
-                  <Text style={styles.settleTxt}>
-                    <Text style={styles.settleName}>{st.from.name}</Text> paga a{" "}
-                    <Text style={styles.settleName}>{st.to.name}</Text>
-                  </Text>
-                  <Text style={styles.settleAmt}>
-                    {formatMoney(st.amount, trip.currency)}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.settleTxt}>
+                      <Text style={styles.settleName}>{st.from.name}</Text> paga a{" "}
+                      <Text style={styles.settleName}>{st.to.name}</Text>
+                    </Text>
+                    <Text style={styles.settleAmt}>
+                      {formatMoney(st.amount, trip.currency)}
+                    </Text>
+                  </View>
+                  <Pressable
+                    style={styles.payBtn}
+                    onPress={() => markPaid(st.from, st.to, st.amount)}
+                  >
+                    <Ionicons name="checkmark" size={15} color="#fff" />
+                    <Text style={styles.payBtnTxt}>Pago</Text>
+                  </Pressable>
                 </View>
               ))}
+            </View>
+          </>
+        ) : trip.expenses.length > 0 ? (
+          <View style={styles.allSettled}>
+            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+            <Text style={styles.allSettledTxt}>Está tudo acertado 🎉</Text>
+          </View>
+        ) : null}
+
+        {/* Pagamentos já feitos */}
+        {(trip.payments ?? []).length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Acertos feitos</Text>
+            <View style={styles.card}>
+              {(trip.payments ?? []).map((pm, i) => {
+                const from = trip.members.find((m) => m.id === pm.from)?.name ?? "—";
+                const to = trip.members.find((m) => m.id === pm.to)?.name ?? "—";
+                return (
+                  <View
+                    key={pm.id}
+                    style={[styles.settleRow, i > 0 && styles.divider]}
+                  >
+                    <Text style={[styles.settleTxt, { flex: 1 }]}>
+                      <Text style={styles.settleName}>{from}</Text> pagou{" "}
+                      {formatMoney(pm.amount, trip.currency)} a{" "}
+                      <Text style={styles.settleName}>{to}</Text>
+                    </Text>
+                    <Pressable onPress={() => undoPayment(pm.id)} hitSlop={8}>
+                      <Text style={styles.undo}>anular</Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
             </View>
           </>
         )}
@@ -270,7 +371,36 @@ const styles = StyleSheet.create({
   },
   settleTxt: { color: colors.textMuted, fontSize: 14.5, fontFamily: fonts.sans },
   settleName: { color: colors.text, fontWeight: "600" },
-  settleAmt: { color: colors.text, fontSize: 15, fontWeight: "700", fontFamily: fonts.sans },
+  settleAmt: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "700",
+    fontFamily: fonts.sans,
+    marginTop: 2,
+  },
+  payBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.success,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  payBtnTxt: { color: "#fff", fontSize: 13, fontWeight: "600", fontFamily: fonts.sans },
+  allSettled: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    paddingVertical: spacing.md,
+    marginTop: spacing.xs,
+    ...shadow.card,
+  },
+  allSettledTxt: { color: colors.text, fontSize: 15, fontWeight: "600", fontFamily: fonts.sans },
+  undo: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.sans, textDecorationLine: "underline" },
   despHead: {
     flexDirection: "row",
     alignItems: "center",

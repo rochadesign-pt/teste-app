@@ -42,11 +42,20 @@ export function tripStats(trip: Trip): TripStats {
     for (const id of split) if (owed[id] !== undefined) owed[id] += share;
   }
 
+  // Acertos já feitos: quem paga um acerto fica com menos dívida (net sobe),
+  // quem recebe fica com menos a receber (net desce).
+  const settledAdj: Record<string, number> = {};
+  for (const m of members) settledAdj[m.id] = 0;
+  for (const p of trip.payments ?? []) {
+    if (settledAdj[p.from] !== undefined) settledAdj[p.from] += p.amount;
+    if (settledAdj[p.to] !== undefined) settledAdj[p.to] -= p.amount;
+  }
+
   const balances: Balance[] = members.map((m) => ({
     member: m,
     paid: round2(paid[m.id]),
     owed: round2(owed[m.id]),
-    net: round2(paid[m.id] - owed[m.id]),
+    net: round2(paid[m.id] - owed[m.id] + settledAdj[m.id]),
   }));
 
   return {

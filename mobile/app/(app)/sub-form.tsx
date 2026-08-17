@@ -36,6 +36,7 @@ export default function SubForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
+  const [day, setDay] = useState("");
   const [icon, setIcon] = useState(ICONS[0]);
   const [color, setColor] = useState(COLORS[0]);
   const [busy, setBusy] = useState(false);
@@ -46,9 +47,11 @@ export default function SubForm() {
     const a = parseFloat(amount.replace(",", "."));
     if (!name.trim()) return setError("Dá um nome à recorrência.");
     if (isNaN(a) || a <= 0) return setError("Indica um valor mensal válido.");
+    const d = parseInt(day, 10);
+    const dueDay = !isNaN(d) && d >= 1 && d <= 31 ? d : undefined;
     setBusy(true);
     try {
-      await api.createSubscription({ name: name.trim(), amount: a, icon, color });
+      await api.createSubscription({ name: name.trim(), amount: a, icon, color, dueDay });
       router.back();
     } catch (err) {
       setError((err as Error).message);
@@ -81,6 +84,13 @@ export default function SubForm() {
           onChangeText={setAmount}
           keyboardType="decimal-pad"
           placeholder="9,99"
+        />
+        <Field
+          label="Dia do débito (opcional)"
+          value={day}
+          onChangeText={setDay}
+          keyboardType="number-pad"
+          placeholder="Ex.: 8"
         />
         <Text style={styles.label}>Ícone</Text>
         <ScrollView
